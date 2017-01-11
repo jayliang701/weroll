@@ -1,0 +1,6 @@
+{
+    "ver": "1.0.0",
+    "list":[
+        { "type":1, "duration":43200, "waitCallBack":true, "initExecute":true, "script":"clean_title_cache" }
+    ]
+}

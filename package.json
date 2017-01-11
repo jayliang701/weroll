@@ -1,0 +1,52 @@
+{
+  "name": "weroll",
+  "version": "1.0.0",
+  "description": "none",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jayliang701/weroll.git"
+  },
+  "keywords": [
+    "web",
+    "framework",
+    "micro",
+    "service",
+    "ecosystem"
+  ],
+  "author": "Jay Liang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jayliang701/weroll/issues"
+  },
+  "homepage": "https://github.com/jayliang701/weroll#readme",
+  "dependencies": {
+    "async": "^2.1.4",
+    "body-parser": "^1.15.2",
+    "bufferhelper": "^0.2.1",
+    "console-stamp": "^0.2.5",
+    "cookie": "^0.3.1",
+    "cookie-parser": "^1.4.3",
+    "dateformat": "^2.0.0",
+    "emailjs": "^1.0.8",
+    "express": "^4.14.0",
+    "formidable": "^1.0.17",
+    "iconv-lite": "^0.4.15",
+    "memory-cache": "^0.1.6",
+    "method-override": "^2.3.7",
+    "min-request": "^1.4.1",
+    "mkdirp": "^0.5.1",
+    "mongodb": "^2.2.19",
+    "mongoose": "^4.7.6",
+    "morgan": "^1.7.0",
+    "nunjucks": "^3.0.0",
+    "redis": "^2.6.3",
+    "request": "^2.79.0",
+    "socket.io": "^1.7.2",
+    "socket.io-client": "^1.7.2",
+    "underscore": "^1.8.3"
+  }
+}
