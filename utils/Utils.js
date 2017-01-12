@@ -47,6 +47,10 @@ global.__defineGetter__('cloneObject', function() {
     };
 });
 
+global.__defineGetter__('sleep', function() {
+    return exports.sleep;
+});
+
 Error.create = function(code, msg) {
     msg = msg ? msg.toString() : "unknown";
     var err = new Error('code: ' + code + ', ' + msg);
@@ -77,6 +81,14 @@ if (!Array.prototype.shuffle) {
         for(var j, x, i = this.length; i; j = parseInt(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
         return this;
     };
+}
+
+exports.sleep = function(time) {
+    return new Promise(function (resolve) {
+        setTimeout(function() {
+            resolve();
+        }, time);
+    });
 }
 
 exports.runQueueTask = function(tasks, callBack) {

@@ -48,35 +48,11 @@ function open(host, port, name, option, callBack, asDefault) {
         process.nextTick(done);
     } else {
         var MongoClient = require("mongodb").MongoClient;
-        MongoClient.connect("mongodb://" + host + ":" + port + "/" + name, option, function(err, db) {
+        MongoClient.connect("mongodb://" + host + ":" + port + "/" + name, option, function (err, db) {
             if (db) newDB = db;
             done(err);
         });
-        /*
-        newDB = new mongodb.Db(name, new mongodb.Server(host, port, option), dbOption);
-        newDB.open(function(err, db){
-            if (err) {
-                console.error(err);
-                delete dbMap[name];
-                if (callBack) {
-                    callBack(false, err);
-                }
-            } else {
-
-                if (auth) {
-                    db.authenticate(auth[0], auth[1], function(err, res) {
-                        console.log("db.authenticate ----> ");
-                        console.log(arguments);
-                        done();
-                    });
-                } else {
-                    done();
-                }
-            }
-        });
-        */
     }
-    //return newDB;
 }
 
 function getDBByName(dbName) {
@@ -84,171 +60,148 @@ function getDBByName(dbName) {
 }
 
 function insert(dbName, target, data, callBack) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
-
-    db.collection(target).save(data, {upsert:true}, function(err, res){
-        if (err) console.error(err);
-        if (callBack) {
-            callBack(res ? res : {}, err);
-        }
+        db.collection(target).insertOne(data, function(err, res){
+            if (err) console.error(err);
+            callBack && callBack(err, res);
+            err ? reject(err) : resolve(res);
+        });
     });
 }
 
 function insertList(dbName, target, list, callBack) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    db.collection(target).insert(list, function(err, res){
-        if (err) {
-            console.error(err);
-        }
-        if (callBack) {
-            callBack(res ? res : [], err);
-        }
-    });
-}
-
-function find(dbName, target, callBack, filter, fields, sort, pagination) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
-        }
-        return;
-    }
-
-    var targetCol = db.collection(target);
-    var args = [];
-    args.push(filter ? filter : {});
-    var opt = {};
-    if (fields) opt.fields = fields;
-    if (sort) opt.sort = sort;
-    if (pagination)  {
-        opt.limit = pagination.num;
-        if (pagination.index > 0) opt.skip = pagination.index * opt.limit;
-    }
-    args.push(opt);
-    args.push(function(err1, cursor) {
-        if (err1) {
-            console.error(target + ".find failed ==> " + err1);
-            if (callBack) {
-                callBack(null, err1);
-            }
-            return;
-        }
-        cursor.toArray(function(err2, items) {
-            if (err2) console.error(target + ".find.toArray failed ==> " + err2);
-            //console.log(target + ".find complete ==> items.length: " + (items ? items.length : 0));
-            if (callBack) {
-                callBack(items, err2);
-            }
+        db.collection(target).insert(list, function(err, res){
+            callBack && callBack(err, res);
+            err ? reject(err) : resolve(res);
         });
     });
-    targetCol.find.apply(targetCol, args);
 }
 
-function findOne(dbName, target, callBack, filter, fields) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
+function find(dbName, target, filter, fields, sort, pagination, callBack) {
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    var targetCol = db.collection(target);
-    var args = [];
-    args.push(filter ? filter : {});
-    if (fields) args.push(fields);
-    args.push(function(err, obj) {
-        if (err) console.error(target + ".findOne failed ==> " + err);
-        if (callBack) {
-            callBack(obj, err);
+        var targetCol = db.collection(target);
+        var args = [];
+        args.push(filter ? filter : {});
+        var opt = {};
+        if (fields) opt.fields = fields;
+        if (sort) opt.sort = sort;
+        if (pagination)  {
+            opt.limit = pagination.num;
+            if (pagination.index > 0) opt.skip = pagination.index * opt.limit;
         }
-    });
-    targetCol.findOne.apply(targetCol, args);
-}
-
-function findPage(dbName, target, startIndex, pageNum, callBack, filter, fields, sort) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, -1, createNotOpenErr(dbName));
-        }
-        return;
-    }
-
-    var targetCol = db.collection(target);
-
-    filter = filter ? filter : {};
-
-    var cursor = targetCol.find(filter, {fields:fields});
-    cursor.count(function(err, totalNum) {
-        if (err) {
-            if (callBack) {
-                callBack(null, -1, err);
+        args.push(opt);
+        args.push(function(err1, cursor) {
+            if (err1) {
+                console.error(target + ".find failed ==> ", err1);
+                callBack && callBack(err1);
+                return reject(err1);
             }
-        } else {
-            if (sort) {
-                cursor = cursor.sort(sort);
-            }
-            cursor.skip(parseInt(startIndex) * parseInt(pageNum)).limit(parseInt(pageNum)).toArray(function(err, items) {
-                if (err) console.error(target + ".find.sort.skip.limit.toArray failed ==> " + err);
-                if (callBack) {
-                    callBack(items, totalNum, err);
-                }
+            cursor.toArray(function(err2, items) {
+                if (err2) console.error(target + ".find.toArray failed ==> ", err2);
+                //console.log(target + ".find complete ==> items.length: " + (items ? items.length : 0));
+                callBack && callBack(err2, items);
+                err2 ? reject(err2) : resolve(items);
             });
-        }
+        });
+        targetCol.find.apply(targetCol, args);
     });
 }
 
-function count(dbName, target, callBack, filter) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(0, createNotOpenErr(dbName));
+function findOne(dbName, target, filter, fields, callBack) {
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    var targetCol = db.collection(target);
-    targetCol.count(filter ? filter : {},
-        function(err, count) {
-            if (err) console.error(target + ".count failed ==> " + err);
-            if (callBack) {
-                callBack(err ? 0 : count, err);
-            }
+        var targetCol = db.collection(target);
+        var args = [];
+        args.push(filter ? filter : {});
+        if (fields) args.push(fields);
+        args.push(function(err, obj) {
+            if (err) console.error(target + ".findOne failed ==> ", err);
+            callBack && callBack(err, obj);
+            err ? reject(err) : resolve(obj);
         });
+        targetCol.findOne.apply(targetCol, args);
+    });
 }
 
-function custom(dbName, func, callBack) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
+function findPage(dbName, target, filter, fields, sort, pagination, callBack) {
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
-    func(db, function() {
-        if (callBack) callBack.apply(this, arguments);
+
+        var targetCol = db.collection(target);
+
+        filter = filter ? filter : {};
+        pagination = pagination || { index:0, num:20 };
+
+        var cursor = targetCol.find(filter, {fields:fields});
+        cursor.count(function(err, totalNum) {
+            if (err) {
+                console.error(target + ".count failed ==> ", err);
+                callBack && callBack(err);
+                return reject(err);
+            } else {
+                if (sort) {
+                    cursor = cursor.sort(sort);
+                }
+                var pageIndex = pagination.index || 0;
+                var pageSize = pagination.num || 20;
+                cursor.skip(parseInt(pageIndex) * parseInt(pageSize)).limit(parseInt(pageSize)).toArray(function(err, items) {
+                    if (err) console.error(target + ".find.sort.skip.limit.toArray failed ==> ", err);
+                    var result = items ? { list:items, totalNum:totalNum, pageIndex:pageIndex, pageSize:pageSize } : null;
+                    callBack && callBack(err, result);
+                    err ? reject(err) : resolve(result);
+                });
+            }
+        });
+    });
+}
+
+function count(dbName, target, filter, callBack) {
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
+        }
+
+        var targetCol = db.collection(target);
+        targetCol.count(filter ? filter : {}, function(err, count) {
+            if (err) console.error(target + ".count failed ==> ", err);
+            callBack && callBack(err, count);
+            err ? reject(err) : resolve(count);
+        });
     });
 }
 
@@ -264,18 +217,20 @@ function custom(dbName, func, callBack) {
 * */
 
 function aggregate(dbName, target, operation, callBack) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
-    var targetCol = db.collection(target);
-    targetCol.aggregate(operation, function(err, res) {
-        if (err) console.error(target + ".aggregate failed ==> err: " + err + "      args: " + operation ? JSON.stringify(operation) : "null");
-        if (callBack) callBack(res, err);
+
+        var targetCol = db.collection(target);
+        targetCol.aggregate(operation, function(err, res) {
+            if (err) console.error(target + ".aggregate failed ==> err: " + err + "      args: ", operation ? JSON.stringify(operation) : "null");
+            callBack && callBack(err, res);
+            err ? reject(err) : resolve(res);
+        });
     });
 }
 
@@ -306,201 +261,228 @@ function processUpdateParams(params) {
     return changes;
 }
 
-function update(dbName, target, filter, params, callBack, upsert, justOne) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(0, createNotOpenErr(dbName));
+function update(dbName, target, filter, params, option, callBack) {
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
-    var targetCol = db.collection(target);
+        var targetCol = db.collection(target);
 
-    var changes = processUpdateParams(params);
+        var changes = processUpdateParams(params);
 
-    targetCol.update(filter,
-        changes,
-        {upsert:upsert ? true : false, multi:justOne ? false : true, w:1},
-        function(err, result) {
-            if (err) console.error(target + ".update failed ==> " + err);
-            var numUp = 0;
-            try {
-                if (typeof result == "object") {
-                    numUp = result && result.result && result.result.n ? parseInt(result.result.n) : 0;
-                } else {
-                    numUp = parseInt(result);
-                }
-            } catch (exp) {
-                numUp = 0;
-            }
-            if (callBack) {
-                callBack(numUp, err);
-            }
-        });
+        targetCol.update(filter,
+            changes,
+            {upsert:option && option.upsert ? true : false, multi:option && option.multi ? true : false, w:1},
+            function(err, result) {
+                if (err) console.error(target + ".update failed ==> " + err);
+                result = result ? result.result : { ok: 1, nModified: 0, n: 0 };
+                callBack && callBack(err, result);
+                err ? reject(err) : resolve(result);
+            });
+    });
 }
 
-function updateOne(dbName, target, filter, params, callBack, upsert) {
-    update(dbName, target, filter, params, callBack, upsert, true);
+function findOneAndUpdate(dbName, target, filter, params, options) {
+    var callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
+
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
+        }
+
+        var targetCol = db.collection(target);
+
+        var changes = processUpdateParams(params);
+
+        options = options ? JSON.parse(JSON.stringify(options)) : { upsert:false, new:false };
+        options.projection = options.fields;
+        options.returnOriginal = !options.new;
+        delete options["fields"];
+
+        targetCol.findOneAndUpdate(filter, changes, options,
+            function(err, result) {
+                if (err) console.error(target + ".findOneAndUpdate failed ==> " + err);
+                var doc = null;
+                try {
+                    if (typeof result == "object") {
+                        doc = result.value;
+                    }
+                } catch (exp) {
+                    doc = null;
+                }
+                callBack && callBack(err, doc);
+                err ? reject(err) : resolve(doc);
+            });
+    });
 }
 
-function findAndModify(dbName, target, filter, params, callBack, options) {
-    var db = getDBByName(dbName);
+function findOneAndDelete(dbName, target, filter, options) {
+    var callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
 
-    if (!db) {
-        if (callBack) {
-            callBack(0, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
-    var targetCol = db.collection(target);
 
-    var changes = processUpdateParams(params);
+        var targetCol = db.collection(target);
 
-    options = options || { upsert:false, multi:false, w:1 };
-    var sort = options.sort || null;
-    delete options["sort"];
+        options = options ? JSON.parse(JSON.stringify(options)) : { upsert:false };
+        options.projection = options.fields;
+        delete options["fields"];
 
-    targetCol.findAndModify(filter, sort, changes, options,
-        function(err, result) {
-            if (err) console.error(target + ".update failed ==> " + err);
-            var doc = null;
-            try {
-                if (typeof result == "object") {
-                    doc = result.value;
+        targetCol.findOneAndDelete(filter, options,
+            function(err, result) {
+                if (err) console.error(target + ".findOneAndDelete failed ==> " + err);
+                var doc = null;
+                try {
+                    if (typeof result == "object") {
+                        doc = result.value;
+                    }
+                } catch (exp) {
+                    doc = null;
                 }
-            } catch (exp) {
-                doc = null;
-            }
-            if (callBack) {
-                callBack(doc, err);
-            }
-        });
+                callBack && callBack(err, doc);
+                err ? reject(err) : resolve(doc);
+            });
+    });
 }
 
 function ensureIndex(dbName, target, key, callBack) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    var targetCol = db.collection(target);
+        var targetCol = db.collection(target);
 
-    var indexes;
-    if (typeof key == 'object') {
-        indexes = key;
-    } else {
-        indexes = {};
-        indexes[key] = 1;
-    }
-    targetCol.ensureIndex(indexes, function() {
-        if (callBack) callBack.apply(targetCol, arguments);
+        var indexes;
+        if (typeof key == 'object') {
+            indexes = key;
+        } else {
+            indexes = {};
+            indexes[key] = 1;
+        }
+        targetCol.ensureIndex(indexes, function(err, result) {
+            callBack && callBack(err, result);
+            err ? reject(err) : resolve(result);
+        });
     });
 }
 
-function remove(dbName, target, filters, callBack) {
-    var db = getDBByName(dbName);
+function remove(dbName, target, filters, options) {
+    var callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
 
-    if (!db) {
-        if (callBack) {
-            callBack(0, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    var targetCol = db.collection(target);
-    targetCol.remove.apply(targetCol, filters.concat([{w:1},
-        function(err, result) {
-            var removedNum = 0;
-            if (err) {
-                console.error(target + ".remove failed ==> " + err);
-            } else {
-                if (typeof result == "object") {
-                    removedNum = result && result.result && result.result.n ? parseInt(result.result.n) : 0;
-                } else {
-                    removedNum = parseInt(result);
-                }
-                //console.log(target + ".remove " + removedNum + " docs from " + target + ".");
-            }
+        options = options || { single:false };
 
-            if (callBack) {
-                callBack(removedNum, err);
-            }
-        }]));
+        var targetCol = db.collection(target);
+        if (typeof filters == "object" && !(filters instanceof Array)) {
+            filters = [ filters ];
+        }
+        targetCol.remove.apply(targetCol, filters.concat([options,
+            function(err, result) {
+                if (err) console.error(target + ".update failed ==> " + err);
+                result = result ? result.result : { ok: 1, n: 0 };
+                callBack && callBack(err, result);
+                err ? reject(err) : resolve(result);
+            }]));
+    });
 }
 
 function listAllCollections(dbName, callBack) {
-    var db = getDBByName(dbName);
-
-    if (!db) {
-        if (callBack) {
-            callBack(null, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    db.collections(function() {
-        if (callBack) callBack(arguments[1]);
+        db.collections(function(err, result) {
+            callBack && callBack(err, result);
+            err ? reject(err) : resolve(result);
+        });
     });
 }
 
-function close(dbName, callBack, delay) {
-    var db = getDBByName(dbName);
+function close(dbName, delay) {
+    var callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
 
-    if (!db) {
-        if (callBack) {
-            callBack(false, createNotOpenErr(dbName));
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            callBack && callBack(err);
+            return reject(err);
         }
-        return;
-    }
 
-    delay = delay >= 0 ? delay : 500;
+        delay = delay >= 0 ? delay : 500;
 
-    db.close(function(err) {
-        setTimeout(function() {
-            if (err) {
-                console.error(err);
-                if (callBack) {
-                    callBack(false, err);
+        var isDefaultDB = defaultDB == db;
+        db.close(function(err) {
+            setTimeout(function() {
+                if (err) {
+                    console.error(err);
+                } else {
+                    delete dbMap[dbName];
+                    if (isDefaultDB) defaultDB = undefined;
+                    console.log("DBModel connection[" + dbName + "] has been closed.");
                 }
-            } else {
-
-                delete dbMap[dbName];
-
-                console.log("DBModel connection[" + dbName + "] has been closed.");
-                if (callBack) {
-                    callBack(true);
-                }
-            }
-        }, delay);
+                callBack && callBack(err);
+                err ? reject(err) : resolve();
+            }, delay);
+        });
     });
 }
 
 function closeAll(callBack) {
-    var dbs = [];
-    for (var dbName in dbMap) {
-        dbs.push(dbName);
-    }
+    return new Promise(function (resolve, reject) {
+        var dbs = [];
+        for (var dbName in dbMap) {
+            dbs.push(dbName);
+        }
 
-    var closed = 0;
-    dbs.forEach(function(dbName) {
-        close(dbName, function() {
-            closed ++;
-            if (closed >= dbs.length) {
-                if (callBack) callBack();
-            }
-        }, 0);
-    });
-
-    if (dbs.length <= 0) {
-        process.nextTick(function() {
-            if (callBack) callBack();
+        var closed = 0;
+        dbs.forEach(function(dbName) {
+            close(dbName, function() {
+                closed ++;
+                if (closed >= dbs.length) {
+                    if (callBack) callBack();
+                    resolve();
+                }
+            }, 0);
         });
-    }
+
+        if (dbs.length <= 0) {
+            process.nextTick(function() {
+                callBack && callBack();
+                resolve();
+            });
+        }
+    });
 }
 
 function isOpen(dbName) {
@@ -508,7 +490,7 @@ function isOpen(dbName) {
 }
 
 function createNotOpenErr(dbName) {
-    return new Error("DBModel connection[" + dbName + "] is not opened.");
+    return new Error("MongoDB connection[" + dbName + "] is not opened.");
 }
 
 
@@ -522,13 +504,12 @@ exports.insertList = insertList;
 exports.find = find;
 exports.findOne = findOne;
 exports.findPage = findPage;
-exports.custom = custom;
 exports.aggregate = aggregate;
 exports.ensureIndex = ensureIndex;
 exports.listAllCollections = listAllCollections;
 exports.count = count;
 exports.update = update;
-exports.updateOne = updateOne;
-exports.findAndModify = findAndModify;
+exports.findOneAndUpdate = findOneAndUpdate;
+exports.findOneAndDelete = findOneAndDelete;
 exports.remove = remove;
 
