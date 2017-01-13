@@ -12,6 +12,7 @@ module.exports = {
     "REQUEST_PARAMS_INVALID": 102,
     "DB_ERROR": 103,
     "REDIS_ERROR": 104,
+    "ECOSYSTEM_ERROR": 105,
     "ILLEGAL_ACTION": 106,
     "SESSION_ERROR": 110,
 

@@ -417,7 +417,11 @@ exports.propertyJsonStringify = function(obj, clone) {
     return temp;
 }
 
-exports.getFromUrl = function(url, callBack, option){
+exports.getFromUrl = function(url) {
+    var option = typeof arguments[1] == "function" ? null : arguments[1];
+    var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
+    if (typeof callBack != "function") callBack = null;
+
     if (option && option.debug) console.log("ready to request [" + url + "]...");
     if (option && option.debug) option._startTime = Date.now();
     var headers = option && option.headers ? option.headers : {};
@@ -539,18 +543,6 @@ exports.parseIP = function (req) {
     }
 }
 
-//为访客设置临时ID以及cookie以供识别
-exports.generateIdentifyID = function (req) {
-    var identifyID = req.headers["user-agent"];
-    identifyID += exports.parseIP(req);
-
-    /* modified by YDY 2016/1/9 */
-    identifyID += Date.now();
-
-    identifyID = exports.md5(identifyID);
-    return identifyID;
-}
-
 var TIME_RECORD = {};
 
 exports.startRecordTime = function(id) {
@@ -561,28 +553,6 @@ exports.getCostTime = function(id) {
     var time = Date.now() - TIME_RECORD[id];
     delete TIME_RECORD[id];
     return time;
-}
-
-exports.createAsyncThen = function() {
-
-    var funcRes = {
-        execLazy:function() {
-            var ins = this;
-            var args = arguments;
-            process.nextTick(function() {
-                ins.exec.apply(ins, args);
-            });
-        },
-        exec:function() {
-            if (this.cb) {
-                this.cb.apply(this, arguments);
-            }
-        },
-        then:function(cb) {
-            this.cb = cb;
-        }
-    };
-    return funcRes;
 }
 
 /***
@@ -655,83 +625,6 @@ exports.urlCheck = function (str){
     var reg = new RegExp("(http://){0,1}([0-9a-zA-z].+\.).+[a-zA-z].+/{0,1}");
     var isurl = reg.test(str);
     return isurl;
-}
-
-exports.locationsCheck = function (locations, geo_type){
-    if (typeof locations != 'object' || locations==undefined ) return false;
-
-    var location;
-    for (var k=0;k<locations.length;k++){
-        location = locations[k];
-        if (typeof location != 'object' || location==undefined ) return false;
-        for(var i=0;i<location.length;i++){
-            if (typeof location[i] != 'object') return false;
-            if (typeof location[i]["geo"] != 'object' || location[i]["geo"]==undefined ) return false;
-            if (typeof location[i]["geo"]["coodinates"] != 'object' || typeof location[i]["geo"]["type"]!= 'string' || location[i]["geo"]["coodinates"] == undefined ) return false;
-            if (location[i]["geo"]["type"] != geo_type) return false;
-
-            if (typeof location[i]["province"] != 'string' || location[i]["province"] =='' ||
-                typeof location[i]["city"] != 'string' || location[i]["city"] == '' ||
-                typeof location[i]["county"] != 'string' || location[i]["county"] == '' ||
-                typeof location[i]["address"] != 'string' || location[i]["address"] == ''
-            ) return false;
-
-            if(location[i]["geo"]["coodinates"][0] && typeof location[i]["geo"]["coodinates"][0] != 'number') return false;
-            if(location[i]["geo"]["coodinates"][1] && typeof location[i]["geo"]["coodinates"][1] != 'number') return false;
-
-            //经纬度范围合法性判断
-            if(location[i]["geo"]["coodinates"][0]>180 || location[i]["geo"]["coodinates"][0] < -180) return false;
-            if(location[i]["geo"]["coodinates"][1]>90 || location[i]["geo"]["coodinates"][0] < -90) return false;
-        }
-        return true;
-    }
-    return true;
-}
-
-//是否正确的near格式
-exports.locationNearCheck = function (near){
-    if (typeof near != "object") return false;
-    //{co:[121.21,31.20], maxDis:1000}
-    if (typeof near.co !="object") return false;
-    try{
-        near.co[0] = Number( near.co[0] );
-        near.co[1] = Number( near.co[1] );
-        near.maxDis = Number( near.maxDis );
-
-        //经纬度范围合法性判断
-        if(near.co[0]>180 || near.co[0] < -180) return false;
-        if(near.co[1]>90 || near.co[0] < -90) return false;
-    }catch(err){
-        return false;
-    }
-}
-
-exports.mergeMongoQueryObject = function(obj1, obj2) {
-    if (!obj2) return obj1;
-    for (var prop in obj2) {
-        if (prop.indexOf("$") == 0) {
-            var temp1 = obj1[prop];
-            if (temp1) {
-                var temp2 = obj2[prop];
-                for (var prop1 in temp2) {
-                    temp1[prop1] = temp2[prop1];
-                }
-            } else {
-                obj1[prop] = obj2[prop];
-            }
-        } else {
-            obj1[prop] = obj2[prop];
-        }
-    }
-    return obj1;
-}
-
-
-exports.coodinatesCheck = function (co_data){
-    if (!co_data || typeof co_data != "object") return false;
-    if (!(co_data.maxDis >= 0)) return false;
-    if (!co_data.co || isNaN(Number(co_data.co[0])) ||  isNaN(Number(co_data.co[1]))) return false;
-    return true;
 }
 
 exports.lookUpProperty = function(obj, prop) {

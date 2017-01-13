@@ -93,7 +93,7 @@ function __callAPI(func, params, user, callBack) {
             return;
         }
         if (arguments.length == 1 && arguments[0]) {
-            if (UTIL.isArray(arguments[0])) {
+            if (arguments[0] instanceof Array) {
                 code = arguments[0][0];
                 msg = arguments[0][1];
             } else {
@@ -135,6 +135,15 @@ function sendBinary(data, mime, headers) {
 }
 
 function goPage(url, code) {
+    if (url.charAt(0) == "/") url = url.substring(1);
+    if (url.indexOf("http") != 0) {
+        url = options.site + url;
+    }
+    code = code ? code : 303;
+    this.redirect(code, url);
+}
+
+function getHeader(url, code) {
     if (url.charAt(0) == "/") url = url.substring(1);
     if (url.indexOf("http") != 0) {
         url = options.site + url;

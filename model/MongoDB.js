@@ -45,11 +45,15 @@ function open(host, port, name, option, callBack, asDefault) {
     if (option && option.driver == "mongoose") {
         var mongoose = require("mongoose");
         newDB = mongoose.createConnection("mongodb://" + host + ":" + port + "/" + name, option);
+        newDB.__driver = mongoose;
         process.nextTick(done);
     } else {
         var MongoClient = require("mongodb").MongoClient;
         MongoClient.connect("mongodb://" + host + ":" + port + "/" + name, option, function (err, db) {
-            if (db) newDB = db;
+            if (db) {
+                newDB = db;
+                newDB.__driver = require("mongodb");
+            }
             done(err);
         });
     }
@@ -473,7 +477,7 @@ function closeAll(callBack) {
                     if (callBack) callBack();
                     resolve();
                 }
-            }, 0);
+            });
         });
 
         if (dbs.length <= 0) {

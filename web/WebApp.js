@@ -22,6 +22,35 @@ var App = EXPRESS();
 App.maxSockets = Infinity;
 var Server = require('http').createServer(App);
 App.$server = Server;
+
+var SERVICE_MAP = { };
+
+var APP_SETTING;
+var API_SESSION_AUTH_ONLY = false;
+
+var callAPI = function(method, params) {
+    var req = this;
+    var user = typeof arguments[2] == "function" ? null : arguments[2];
+    if (typeof user != "object") user = null;
+    var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
+    if (typeof callBack != "function") callBack = null;
+    method = method.split(".");
+
+    return new Promise(function (resolve, reject) {
+
+        var service = SERVICE_MAP[method[0]];
+        if (!service || !service.hasOwnProperty(method[1])) {
+            var err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
+            callBack && callBack(err);
+            return reject(err);
+        }
+        req.__callAPI(service[method[1]], params, user, function(err, data) {
+            callBack && callBack(err, data);
+            if (err) reject(err);
+            else resolve(data);
+        });
+    });
+};
 /** hack for alipay notification
 App.use(function(req, res, next) {
     if (req.url == '/pay_notify/alipay' && req.get('content-type') != 'application/x-www-form-urlencoded') {
@@ -37,23 +66,10 @@ App.use(METHOD_OVERRIDE());
 App.use(COOKIE());
 App.use(EXPRESS.static(PATH.join(global.APP_ROOT, "client/res")));
 App.use(function(req, res, next) {
-    req.callAPI = function(method, params, callBack, user) {
-        method = method.split(".");
-        var service = SERVICE_MAP[method[0]];
-        if (!service || !service.hasOwnProperty(method[1])) {
-            res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
-            return;
-        }
-        req.__callAPI(service[method[1]], params, user, callBack);
-    }
+    req.callAPI = callAPI.bind(req);
     next();
 });
 WRP.register(App, "middle");
-
-var SERVICE_MAP = { };
-
-var APP_SETTING;
-var API_SESSION_AUTH_ONLY = false;
 
 App.post("/api", function (req, res) {
 

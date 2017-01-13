@@ -217,6 +217,44 @@ function JsonAPIMiddleware() {
             });
         }
 
+        var __callAPI = function(func, params, user, callBack) {
+            var req = this;
+            var res = {};
+            res.sayError = function() {
+                var code, msg;
+                if (arguments[0].constructor == Error && arguments[0].hasOwnProperty("code")) {
+                    callBack && callBack(arguments[0]);
+                    return;
+                }
+                if (arguments.length == 1 && arguments[0]) {
+                    if (arguments[0] instanceof Array) {
+                        code = arguments[0][0];
+                        msg = arguments[0][1];
+                    } else {
+                        code = 101;
+                        msg = arguments[0].toString();
+                    }
+                } else {
+                    code = arguments[0] == undefined ? 101 : arguments[0];
+                    msg = arguments[1];
+                }
+                if (!msg) {
+                    msg = "unknown";
+                } else if (typeof msg == 'object') {
+                    msg = msg.toString();
+                }
+                callBack && callBack(Error.create(code, msg));
+            };
+            res.sayOK = function(data) {
+                callBack && callBack(null, data);
+            }
+            res.exec = exec.bind(res);
+            res.done = done.bind(res);
+
+            func(req, res, params, user);
+        }
+
+        req.__callAPI = __callAPI.bind(req);
         res.profile = function() {};
         res.done = done.bind(res);
         res.exec = exec.bind(res);

@@ -47,16 +47,12 @@ exports.removeAllEventListener = function() {
 }
 
 exports.setExpireTime = function(key, val) {
-    if (UTIL.isArray(key)) {
-        key = key.join("->");
-    }
+    if (key instanceof Array) key = key.join("->");
     setExpire(key, val);
 }
 
 exports.registerExpiredTime = function(key, expired) {
-    if (UTIL.isArray(key)) {
-        key = key.join("->");
-    }
+    if (key instanceof Array) key = key.join("-");
     EXPIRED_MAP[key] = Number(expired);
 }
 
@@ -70,27 +66,26 @@ exports.save = function(key, val) {
     return new Promise(function (resolve, reject) {
         var tempKey = key;
         var originalKey = key;
-        if (key instanceof Array) {
-            tempKey = key[0];
-            if (!expired) expired = EXPIRED_MAP[tempKey];
-            key = key.join("->");
+        var redisKey = key;
+        if (key instanceof Array) tempKey = key.join("-");
+        if (tempKey.substr(0, 1) == "@") {
+            redisKey = exports.join(tempKey, CACHE_PREFIX);
         } else {
-            if (!expired) expired = EXPIRED_MAP[key];
+            redisKey = exports.join(CACHE_PREFIX + tempKey);
         }
+        //console.log('save ---> ' + tempKey);
+
+        if (!expired) expired = EXPIRED_MAP[tempKey];
         var originalVal = val;
         if (typeof val == "object") {
             val = JSON.stringify(val);
         }
-        if (key.substr(0, 1) == "@") {
-            key = exports.join(key, CACHE_PREFIX);
-        } else {
-            key = exports.join(CACHE_PREFIX + key);
-        }
-        client.set(key, val, function (redisErr, redisRes) {
+
+        client.set(redisKey, val, function (redisErr, redisRes) {
             if (!expired || expired == - 1) {
                 //no expired
             } else {
-                client.expire(key, expired);
+                client.expire(redisKey, expired);
             }
 
             if (redisRes) {
@@ -103,7 +98,7 @@ exports.save = function(key, val) {
             if (redisErr) {
                 reject(redisErr);
             } else {
-                resolve(redisRes);
+                resolve(originalVal);
             }
         });
     });
@@ -111,15 +106,16 @@ exports.save = function(key, val) {
 
 exports.read = function(key, callBack) {
     return new Promise(function (resolve, reject) {
-        if (key instanceof Array) {
-            key = key.join("->");
-        }
-        if (key.substr(0, 1) == "@") {
-            key = exports.join(key, CACHE_PREFIX);
+        var tempKey = key;
+        var redisKey = key;
+        if (key instanceof Array) tempKey = key.join("-");
+        if (tempKey.substr(0, 1) == "@") {
+            redisKey = exports.join(tempKey, CACHE_PREFIX);
         } else {
-            key = exports.join(CACHE_PREFIX + key);
+            redisKey = exports.join(CACHE_PREFIX + tempKey);
         }
-        client.get(key, function(err, res) {
+        //console.log('read ---> ' + tempKey);
+        client.get(redisKey, function(err, res) {
             if (res && typeof res == "string") {
                 try {
                     res = JSON.parse(res);
@@ -137,15 +133,16 @@ exports.read = function(key, callBack) {
 
 exports.remove = function(key, callBack) {
     return new Promise(function (resolve, reject) {
-        if (key instanceof Array) {
-            key = key.join("->");
-        }
-        if (key.substr(0, 1) == "@") {
-            key = exports.join(key, CACHE_PREFIX);
+        var tempKey = key;
+        var redisKey = key;
+        if (key instanceof Array) tempKey = key.join("-");
+        if (tempKey.substr(0, 1) == "@") {
+            redisKey = exports.join(tempKey, CACHE_PREFIX);
         } else {
-            key = exports.join(CACHE_PREFIX + key);
+            redisKey = exports.join(CACHE_PREFIX + tempKey);
         }
-        client.del(key, function(err) {
+        //console.log('remove ---> ' + tempKey);
+        client.del(redisKey, function(err) {
             callBack && callBack(err);
             if (err) {
                 reject(err);

@@ -30,7 +30,7 @@ exports.__register = function(target, client) {
         this.client = client;
         this.name = name;
         this.callAPI = function(method, params, callBack) {
-            exports.__callAPI(ins.name, method, params, callBack);
+            return exports.__callAPI(ins.name, method, params, callBack);
         }
         this.fire = ins.client.fire;
         this.listen = ins.client.listen;
@@ -49,55 +49,58 @@ exports.__register = function(target, client) {
 
 exports.callAPI = function() {
     if (arguments.length < 4) {
-        exports.__callAPI.apply(this, [ "core", arguments[0], arguments[1], arguments[2] ]);
+        return exports.__callAPI.apply(this, [ "core", arguments[0], arguments[1], arguments[2] ]);
     } else {
-        exports.__callAPI.apply(this, [ arguments[0], arguments[1], arguments[2], arguments[3] ]);
+        return exports.__callAPI.apply(this, [ arguments[0], arguments[1], arguments[2], arguments[3] ]);
     }
 }
 
 exports.__callAPI = function(target, method, params, callBack) {
-    //if (DEBUG) console.log("[Ecosystem] call *" + target + "* api --> " + method);
-    var URL = Setting.ecosystem.servers[target].api;
-    var postData = {};
-    if (params) {
-        postData = params;
-    }
-    request(URL,
-        {
-            headers: {
-                'Content-Type': 'application/json'
+    return new Promise(function (resolve, reject) {
+        //if (DEBUG) console.log("[Ecosystem] call *" + target + "* api --> " + method);
+        var URL = Setting.ecosystem.servers[target].api;
+        var postData = {};
+        if (params) {
+            postData = params;
+        }
+        request(URL,
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                method: "POST",
+                body: { method:method, data:postData }
             },
-            method: "POST",
-            body: { method:method, data:postData }
-        },
-        function(err, res, body) {
-            //if (DEBUG) console.log("[Ecosystem] *" + target + "* response --> ");
-            if (err) {
-                console.error(err);
-                if (callBack) callBack(Error.create(CODES.CORE_SERVICE_ERROR, err.toString()));
-            } else {
-                //if (DEBUG) console.log(body);
-
-                if (typeof body == "string") {
-                    try {
-                        body = JSON.parse(body);
-                    } catch (exp) {
-                        err = Error.create(CODES.CORE_SERVICE_ERROR, exp.toString());
-                        body = null;
-                    }
-                }
-
-                if (!err && body.code > 1) {
-                    //error response
-                    err = Error.create(body.code, body.msg);
-                    body = null;
+            function(err, res, body) {
+                //if (DEBUG) console.log("[Ecosystem] *" + target + "* response --> ");
+                if (err) {
+                    console.error(err);
+                    if (callBack) callBack(Error.create(CODES.ECOSYSTEM_ERROR, err.toString()));
                 } else {
-                    body = body ? body.data : null;
-                }
+                    //if (DEBUG) console.log(body);
 
-                if (callBack) callBack(err, body);
-            }
-        });
+                    if (typeof body == "string") {
+                        try {
+                            body = JSON.parse(body);
+                        } catch (exp) {
+                            err = Error.create(CODES.ECOSYSTEM_ERROR, exp.toString());
+                            body = null;
+                        }
+                    }
+
+                    if (!err && body.code > 1) {
+                        //error response
+                        err = Error.create(body.code, body.msg);
+                        body = null;
+                    } else {
+                        body = body ? body.data : null;
+                    }
+
+                    callBack && callBack(err, body);
+                    err ? reject(err) : resolve(body);
+                }
+            });
+    });
 }
 
 global.__defineGetter__('Ecosystem', function() {
@@ -116,7 +119,7 @@ var Client = function(name) {
     }
 
     this.fire = function(event, data, callBack) {
-        exports.fire(ins.serverName, event, data, callBack);
+        return exports.fire(ins.serverName, event, data, callBack);
     }
 
     this.listen = function(event, handler) {
@@ -186,46 +189,52 @@ exports.init = function(config, customSetting) {
 }
 
 exports.broadcast = function(event, data, callBack) {
-    if (!server) return;
+    return new Promise(function (resolve, reject) {
+        if (!server) return resolve();
 
-    //if (DEBUG) console.log("[Ecosystem] broadcast message --> " + event + " : " + (data ? JSON.stringify(data) : {}));
-    if (event.indexOf("@") > 0) {
-        event = event.split("@");
-        var target = event[0];
-        event = event[1];
-        exports.fire(target, event, data, callBack);
-    } else {
-        var servers = Setting.ecosystem.servers;
-        if (servers) {
-            var p = [];
-            var errs;
-            for (var target in servers) {
-                (function(s) {
-                    p.push(function(cb) {
-                        exports.fire(s, event, data, function(err) {
-                            if (err) {
-                                if (!errs) errs = {};
-                                errs[s] = err;
-                            }
-                            cb();
+        //if (DEBUG) console.log("[Ecosystem] broadcast message --> " + event + " : " + (data ? JSON.stringify(data) : {}));
+        if (event.indexOf("@") > 0) {
+            event = event.split("@");
+            var target = event[0];
+            event = event[1];
+            exports.fire(target, event, data, callBack);
+        } else {
+            var servers = Setting.ecosystem.servers;
+            if (servers) {
+                var p = [];
+                var errs;
+                for (var target in servers) {
+                    (function(s) {
+                        p.push(function(cb) {
+                            exports.fire(s, event, data, function(err) {
+                                if (err) {
+                                    if (!errs) errs = {};
+                                    errs[s] = err;
+                                }
+                                cb();
+                            });
                         });
-                    });
-                })(target);
+                    })(target);
+                }
+                runAsParallel(p, function() {
+                    callBack && callBack(errs);
+                    errs ? reject(errs) : resolve();
+                });
             }
-            runAsParallel(p, function() {
-                if (callBack) callBack(errs);
-            });
         }
-    }
+    });
 }
 
 exports.fire = function(target, event, data, callBack) {
-    //var startTime = Date.now();
-    var address = Setting.ecosystem.servers[target]["message"];
-    //if (DEBUG) console.log("[Ecosystem] *" + Setting.ecosystem.name + "* fire message to *" + target + "@" + address + "* --> " + event + " : " + (data ? JSON.stringify(data) : {}));
+    return new Promise(function (resolve, reject) {
+        //var startTime = Date.now();
+        var address = Setting.ecosystem.servers[target]["message"];
+        //if (DEBUG) console.log("[Ecosystem] *" + Setting.ecosystem.name + "* fire message to *" + target + "@" + address + "* --> " + event + " : " + (data ? JSON.stringify(data) : {}));
 
-    exports.__fire(address, event, data, function(err, body) {
-        if (callBack) callBack(err, body);
+        exports.__fire(address, event, data, function(err, body) {
+            callBack && callBack(err, body);
+            err ? reject(err) : resolve(body);
+        });
     });
 }
 

@@ -114,11 +114,22 @@ function APIServer() {
 
         server.get("/apidoc", function(req, res, params) {
             var callback = require("url").parse(req.url, true).query.callback;
+            res.writeHead(200, {
+                "Content-Type":"text/plain; charset=utf-8"
+            });
             res.end(callback + "(" + JSON.stringify(DEBUG_SERVICE_LIST) + ")");
         });
 
         server.get("/debug", function(req, res, params) {
-            var html = FS.readFileSync(PATH.join(global.APP_ROOT, "client/views/debug.html"), {encoding:"utf8"});
+            var html = "";
+            try {
+                html = FS.readFileSync(PATH.join(global.APP_ROOT, "client/views/debug.html"), {encoding:"utf8"});
+            } catch (exp) {
+                console.error(exp);
+                res.writeHead(404);
+                res.end();
+                return;
+            }
             html = html.replace(/\{\{RES_CDN_DOMAIN\}\}/mg, APP_SETTING.cdn.res);
             html = html.replace(/\{\{SITE_DOMAIN\}\}/mg, APP_SETTING.site);
             html = html.replace(/\{\{API_GATEWAY\}\}/mg, APP_SETTING.site + "api");
@@ -130,6 +141,30 @@ function APIServer() {
 
     var SERVICE_MAP = {};
     var APP_SETTING;
+
+    var callAPI = function(method, params) {
+        var req = this;
+        var user = typeof arguments[2] == "function" ? null : arguments[2];
+        if (typeof user != "object") user = null;
+        var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
+        if (typeof callBack != "function") callBack = null;
+        method = method.split(".");
+
+        return new Promise(function (resolve, reject) {
+
+            var service = SERVICE_MAP[method[0]];
+            if (!service || !service.hasOwnProperty(method[1])) {
+                var err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
+                callBack && callBack(err);
+                return reject(err);
+            }
+            req.__callAPI(service[method[1]], params, user, function(err, data) {
+                callBack && callBack(err, data);
+                if (err) reject(err);
+                else resolve(data);
+            });
+        });
+    };
 
     server.post("/api", function(req, res, params) {
         var method = params.method;
@@ -183,6 +218,8 @@ function APIServer() {
                 res.sayError(err);
                 return;
             }
+
+            req.callAPI = callAPI.bind(req);
 
             instance.handleUserSession(req, res, function(flag, user) {
                 if (user && user.isLogined) {

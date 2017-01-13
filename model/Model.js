@@ -32,30 +32,31 @@ exports.init = function(option, callBack) {
         for (var group in CACHE_CONFIG) {
             var defs = CACHE_CONFIG[group];
             for (var key in defs) {
+                var fullKey = group + "-" + key;
                 var def = defs[key];
+                if (def.level == 0) {
+                    SYNC_UP_LEVEL_CACHE[fullKey] = true;
+                }
                 if (def.hasOwnProperty("expired.1")) {
-                    CACHE_POOL["1"].registerExpiredTime(key, def["expired.1"] * 1000);
-                    if (def.level == 0) {
-                        SYNC_UP_LEVEL_CACHE[key] = true;
-                    }
+                    CACHE_POOL["1"].registerExpiredTime([ group, key ], def["expired.1"]);
                 }
                 if (def.hasOwnProperty("expired.2")) {
-                    CACHE_POOL["2"].registerExpiredTime(key, def["expired.2"]);
+                    CACHE_POOL["2"].registerExpiredTime([ group, key ], def["expired.2"]);
                 }
                 if (def.level > 2) {
-                    SAVE_LEVEL_MAPPING[key] = String(def.level);
-                    READ_LEVEL_MAPPING[key] = String(def.level);
+                    SAVE_LEVEL_MAPPING[fullKey] = String(def.level);
+                    READ_LEVEL_MAPPING[fullKey] = String(def.level);
                 } else {
                     if (def.level == 1) {
-                        SAVE_LEVEL_MAPPING[key] = "1";
+                        SAVE_LEVEL_MAPPING[fullKey] = "1";
                     } else {
-                        SAVE_LEVEL_MAPPING[key] = "2";
+                        SAVE_LEVEL_MAPPING[fullKey] = "2";
                     }
 
                     if (def.level == 2) {
-                        READ_LEVEL_MAPPING[key] = "2";
+                        READ_LEVEL_MAPPING[fullKey] = "2";
                     } else {
-                        READ_LEVEL_MAPPING[key] = "1";
+                        READ_LEVEL_MAPPING[fullKey] = "1";
                     }
                 }
             }
@@ -90,10 +91,11 @@ exports.registerCacheSystem = function(level, system) {
 
 function syncUpLevelCacheHandler(event) {
     var key = arguments[0];
-    if (!SYNC_UP_LEVEL_CACHE[key]) return;
-
     var originalKey = arguments[1];
     var val = arguments[2];
+
+    console.log("sync cache event ---> " + key, "    originalKey --> ", originalKey);
+    if (!SYNC_UP_LEVEL_CACHE[key]) return;
 
     CACHE_POOL[1].save(originalKey, val);
 }
@@ -112,20 +114,21 @@ exports.cacheRead = function(key) {
     var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
     if (typeof callBack != "function") callBack = undefined;
 
-    var tempKey = key;
+    var fullKey = key;
     var originalKey = key;
-    if (isNaN(level)) {
+    if (key instanceof Array) fullKey = key.join("-");
+
+    if (isNaN(level) || level === 0) {
         if (typeof key == "string") {
             level = READ_LEVEL_MAPPING[key];
         } else {
-            tempKey = key[0];
-            level = READ_LEVEL_MAPPING[tempKey];
+            level = READ_LEVEL_MAPPING[fullKey];
         }
     }
     if (isNaN(level)) level = 1;
 
-    if (level == 1 && SYNC_UP_LEVEL_CACHE[tempKey]) {
-        var c = CACHE_POOL[1].read(key);
+    if (level == 1 && SYNC_UP_LEVEL_CACHE[fullKey]) {
+        var c = CACHE_POOL[1].read(originalKey);
         if (c) {
             return new Promise(function (resolve) {
                 callBack && callBack(c);
@@ -133,13 +136,13 @@ exports.cacheRead = function(key) {
             });
         } else {
             //console.log("read from deeper cache...");
-            return CACHE_POOL[2].read(key, function(c2, err) {
+            return CACHE_POOL[2].read(originalKey, function(err, c2) {
                 if (err) {
-                    if (callBack) callBack(null, err);
+                    callBack && callBack(err);
                 } else {
                     //console.log("update level 1 cache...");
                     CACHE_POOL[1].save(originalKey, c2);
-                    if (callBack) callBack(c2);
+                    callBack && callBack(c2);
                 }
             });
         }
@@ -154,18 +157,34 @@ exports.cacheSave = function(key, val) {
     var callBack = arguments.length  > 2 ? arguments[arguments.length - 1] : undefined;
     if (typeof callBack != "function") callBack = undefined;
 
+    if (level === 0) {
+        SYNC_UP_LEVEL_CACHE[key instanceof Array ? key.join("-") : key] = true;
+        level = 2;
+    }
+
     if (isNaN(level)) {
         if (typeof key == "string") {
             level = SAVE_LEVEL_MAPPING[key];
         } else {
-            level = SAVE_LEVEL_MAPPING[key[0]];
+            level = SAVE_LEVEL_MAPPING[key.join("-")];
         }
     }
     if (isNaN(level)) level = 1;
     return CACHE_POOL[level].save(key, val, expired, callBack);
 }
 
-exports.cacheRemove = function(key, callBack, level) {
+exports.cacheRemove = function(key) {
+    var level = arguments[1] && !isNaN(Number(arguments[1])) ? arguments[1] : undefined;
+    var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
+    if (typeof callBack != "function") callBack = undefined;
+
+    var fullKey = key;
+    if (key instanceof Array) fullKey = key.join("-");
+    if (SYNC_UP_LEVEL_CACHE[fullKey]) {
+        CACHE_POOL[1].remove(key);
+        return CACHE_POOL[2].remove(key, callBack);
+    }
+
     return CACHE_POOL[level ? level : 1].remove(key, callBack);
 }
 
@@ -296,5 +315,7 @@ process.on('SIGINT', function() {
         db.closeAll(function () {
             process.exit(0);
         });
+    } else {
+        process.exit(0);
     }
 });

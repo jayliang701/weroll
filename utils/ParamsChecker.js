@@ -3,7 +3,7 @@
  */
 
 var UTIL = require("util");
-var Utils = require("wego/utils/Utils");
+var Utils = require("./Utils");
 
 var checker = {};
 
