@@ -285,7 +285,7 @@ function redirectToLogin(req, res, loginPage) {
     }
 }
 
-var COMMON_RESPONSE_DATA = {};
+App.COMMON_RESPONSE_DATA = {};
 
 function registerRouter(r) {
     App.all(r.url, function (req, res) {
@@ -308,9 +308,9 @@ function registerRouter(r) {
             var output = function(view, user, data, err) {
                 data = data ? data : {};
                 if (err) {
-                    res.render("error", { setting:COMMON_RESPONSE_DATA, err:err.toString(), user:user, now:now, query:req.query });
+                    res.render("error", { setting:App.COMMON_RESPONSE_DATA, err:err.toString(), user:user, now:now, query:req.query });
                 } else {
-                    res.render(view, { setting:COMMON_RESPONSE_DATA, data:data, user:user, now:now, query:req.query });
+                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data:data, user:user, now:now, query:req.query });
                 }
             }.bind(res);
 
@@ -430,32 +430,19 @@ exports.start = function(setting, callBack) {
     APP_SETTING = setting;
     API_SESSION_AUTH_ONLY = APP_SETTING.session.apiCheck == 1;
 
-    COMMON_RESPONSE_DATA = {
+    App.COMMON_RESPONSE_DATA = {
         "ENV": setting.env,
         "SITE": setting.site,
         "SITE_DOMAIN": setting.site,
         "API_GATEWAY": setting.site + "api",
         "SITE_NAME": setting.siteName,
         "RES_CDN_DOMAIN": setting.cdn.res,
-        "FLASH_CDN_DOMAIN": setting.cdn.flash,
         payment: setting.payment,
         geo: setting.geo,
         upload: setting.upload,
         "COOKIE_PATH": setting.session.cookiePath
     };
     WRP.config({ site:setting.site });
-
-    if (global.VARS.debug) {
-        App.checkRequestParam_qf = function(val) {
-            try {
-                if (val == "*") return { value:{ } };
-                val = Utils.convertQueryFields(val);
-            } catch (err) {
-                return { value:null, err:err };
-            }
-            return { value:val };
-        }
-    }
 
     Session.getSharedInstance().init(setting.session);
 
@@ -528,9 +515,9 @@ exports.start = function(setting, callBack) {
                 nunjucksEnv.addFilter(key, func);
             };
             viewEngine = nunjucks;
+            App.set('view engine', 'html');
         }
 
-        App.set('view engine', 'html');
         App.set('views', viewPath);
         App.set('view cache', viewCache);
 
