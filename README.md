@@ -431,7 +431,7 @@ function renderSomePage(req, res, params) {
 
 /* ./client/views/some_page.html */
 &lt;script&gt;
-var list = {{data.list|json}};
+var list = \{\{data.list|json\}\};
 console.log(list[0]); //echo Jay
 &lt;/script&gt;
 </code></pre>

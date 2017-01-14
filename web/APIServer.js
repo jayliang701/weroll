@@ -112,7 +112,7 @@ function APIServer() {
 
         var DEBUG_SERVICE_LIST = [];
 
-        server.get("/apidoc", function(req, res, params) {
+        server.get("/__apidoc", function(req, res, params) {
             var callback = require("url").parse(req.url, true).query.callback;
             res.writeHead(200, {
                 "Content-Type":"text/plain; charset=utf-8"
@@ -120,10 +120,10 @@ function APIServer() {
             res.end(callback + "(" + JSON.stringify(DEBUG_SERVICE_LIST) + ")");
         });
 
-        server.get("/debug", function(req, res, params) {
+        server.get("/__test", function(req, res, params) {
             var html = "";
             try {
-                html = FS.readFileSync(PATH.join(global.APP_ROOT, "client/views/debug.html"), {encoding:"utf8"});
+                html = FS.readFileSync(PATH.join(global.APP_ROOT, "client/views/__test.html"), {encoding:"utf8"});
             } catch (exp) {
                 console.error(exp);
                 res.writeHead(404);
