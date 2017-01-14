@@ -1,7 +1,7 @@
 {
   "name": "weroll",
-  "version": "1.0.3",
-  "description": "none",
+  "version": "1.0.4",
+  "description": "Build Your Web Application Fast and Less Codes.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -22,7 +22,6 @@
   "bugs": {
     "url": "https://github.com/jayliang701/weroll/issues"
   },
-  "homepage": "https://github.com/jayliang701/weroll#readme",
   "dependencies": {
     "async": "^2.1.4",
     "body-parser": "^1.15.2",
@@ -48,5 +47,6 @@
     "socket.io": "^1.7.2",
     "socket.io-client": "^1.7.2",
     "underscore": "^1.8.3"
-  }
+  },
+  "readme":"极速搭建一个基于微服务架构的Node.js应用程序，用最小的代码实现常见的web业务。<br><br>使用weroll-cli快速创建一个web程序骨架：<br><pre>$ npm install -g weroll-cli<br>$ weroll-cli init mini DemoApp<br>$ cd DemoApp<br>$ node main.js</pre>然后使用浏览器打开页面：<pre>http://localhost:3000/</pre>Now, let's roll！<br><br><br>访问Github主页 <a href='https://github.com/jayliang701/weroll#readme' target='_blank'>https://github.com/jayliang701/weroll</a> 了解更多。"
 }
