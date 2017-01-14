@@ -2,16 +2,16 @@
 <h3>极速搭建一个基于微服务架构的Node.js应用程序，用最小的代码实现常见的web业务。</h3>
 weroll基于MongoDB，Redis，Express 4.x以及PureHttp（基于原生http库开发的极简化API服务库），经过数个商业项目凝练而来。
 <br><br>
-主要特点如下：
-* 合理的项目文件结构，区分路由逻辑和API逻辑
-* 路由和API可定义访问权限
-* API定义支持常用的数据校验（如字符，数字，手机号等），支持必须参数和可选参数设定
-* 提供API调试工具，自动显示API描述和参数说明
-* 支持多环境配置, 可根据启动参数切换运行环境, 如dev, test, production等, 不同的环境使用不同的配置文件，由开发者自由定义
-* 使用Mongoose操作数据库，简化了Schema定义流程，简化了Model使用方式
-* 封装了socket.io可以实现基本的websocket实时数据交互
-* 集成一些常见的web服务功能，如用户权限维护，邮件发送，短信发送/验证码检查等
-* 面向微服务架构，多个weroll应用之间可以配置成为一个生态系统，相互之间可以调用API和推送消息
+主要特点如下：<br>
+* 合理的项目文件结构，区分路由逻辑和API逻辑<br>
+* 路由和API可定义访问权限<br>
+* API定义支持常用的数据校验（如字符，数字，手机号等），支持必须参数和可选参数设定<br>
+* 提供API调试工具，自动显示API描述和参数说明<br>
+* 支持多环境配置, 可根据启动参数切换运行环境, 如dev, test, production等, 不同的环境使用不同的配置文件，由开发者自由定义<br>
+* 使用Mongoose操作数据库，简化了Schema定义流程，简化了Model使用方式<br>
+* 封装了socket.io可以实现基本的websocket实时数据交互<br>
+* 集成一些常见的web服务功能，如用户权限维护，邮件发送，短信发送/验证码检查等<br>
+* 面向微服务架构，多个weroll应用之间可以配置成为一个生态系统，相互之间可以调用API和推送消息<br>
 
 <br>
 <br>
@@ -172,7 +172,7 @@ exports.config = {
     name: "user",
     enabled: true,
     security: {
-		/* 按照以下注释的写法，API调试工具可以自动识别这些说明并在工具中显示出来 */
+        /* 按照以下注释的写法，API调试工具可以自动识别这些说明并在工具中显示出来 */
         //@hello 打个招呼 @name 名字 @gender 性别,1-男,2-女
         "hello":{ needLogin:false, checkParams:{ name:"string" }, optionalParams:{ gender:"int" } },
         //@bye 说再见 @name 名字
@@ -268,11 +268,16 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 		</tr>
 		<tr>
 			<td>res.sayError()</td>
-			<td>响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数</td>
+			<td>响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre class="highlight"><code>/* Example */
+res.sayError(new Error("ops"));
+res.sayError("ops");
+res.sayError(100, "ops");
+res.sayError(Error.create(100, "ops"));</code></pre></td>
 		</tr>
 		<tr>
 			<td>res.done()</td>
-			<td>响应结果给客户端<br><pre class="highlight"><code>/* Example */<br>res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
+			<td>响应结果给客户端<br><pre class="highlight"><code>/* Example */
+res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
 		</tr>
 		<tr>
 			<td>res.exec()</td>
