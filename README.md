@@ -364,7 +364,7 @@ function renderIndexPage(req, res, output, user)
 }
 
 /* ./client/views/index.html */
-<div>{{data.msg}}</div> <!-- display "hello!" -->
+<div>&#123;&#123;data.msg&#125;&#125;</div> <!-- display "hello!" -->
 </code></pre>
 
 在页面中{{data}}对象即是output传递出去的对象，weroll还封装了一些常用的数据传递到页面中。如URL的querystring数据：
@@ -372,24 +372,24 @@ function renderIndexPage(req, res, output, user)
 /* ./client/views/index.html */
 /* URL: http://localhost:3000/some_page?page=2&size=10 */
 
-<div>page: {{query.page}}</div> <!-- display "2" -->
-<div>size: {{query.size}}</div> <!-- display "10" -->
+<div>page: &#123;&#123;query.page&#125;&#125;</div> <!-- display "2" -->
+<div>size: &#123;&#123;query.size&#125;&#125;</div> <!-- display "10" -->
 </code></pre>
 <br>
 获取服务器当前的时间戳：
 <pre class="highlight"><code>
 /* ./client/views/index.html */
 
-<div>Server TIme: {{now}}</div>
+<div>Server TIme: &#123;&#123;now&#125;&#125;</div>
 </code></pre>
 <br>
 获取./server/config/%ENV%/setting.js 里的一些配置数据，如：
 <pre class="highlight"><code>
 /* ./client/views/index.html */
 
-<div>Site Domain: {{setting.SITE}}</div>   <!-- 网站域名 -->
-<div>Resource CDN: {{setting.RES_CDN_DOMAIN}}</div>   <!-- 静态资源CDN域名 -->
-<div>Site Domain: {{setting.API_GATEWAY}}</div>   <!-- API Gateway的URL地址 -->
+<div>Site Domain: &#123;&#123;setting.SITE&#125;&#125;</div>   <!-- 网站域名 -->
+<div>Resource CDN: &#123;&#123;setting.RES_CDN_DOMAIN&#125;&#125;</div>   <!-- 静态资源CDN域名 -->
+<div>Site Domain: &#123;&#123;setting.API_GATEWAY&#125;&#125;</div>   <!-- API Gateway的URL地址 -->
 </code></pre>
 你也可以自定义或者扩展setting里的数据：
 <pre class="highlight"><code>
@@ -402,7 +402,7 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
 
 /* ./client/views/index.html */
 
-&lt;link type="text/css" rel="stylesheet" href="{{setting.RES_CDN_DOMAIN}}/css/{{setting.defaultStyle}}.css" &gt;
+&lt;link type="text/css" rel="stylesheet" href="&#123;&#123;setting.RES_CDN_DOMAIN&#125;&#125;/css/&#123;&#123;setting.defaultStyle&#125;&#125;.css" &gt;
 </code></pre>
 
 <br>
@@ -435,7 +435,6 @@ var list = &#123;&#123;data.list|json&#125;&#125;;
 console.log(list[0]); //echo Jay
 &lt;/script&gt;
 </code></pre>
-
 
 
 <br>
