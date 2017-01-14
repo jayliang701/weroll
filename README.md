@@ -229,7 +229,6 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 	</tbody>
 </table>
 <br>
-<br>
 <table>
 	<thead>
 		<tr>
@@ -273,11 +272,24 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 		</tr>
 		<tr>
 			<td>res.done()</td>
-			<td>响应结果给客户端<br><pre><code>/* Example */<br>res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
+			<td>响应结果给客户端<br><pre class="highlight"><code>/* Example */<br>res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
 		</tr>
 		<tr>
 			<td>res.exec()</td>
-			<td>执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre><code>/* Example */<br><br>var q = [];<br>q.push(function(callback) { <br>    User.findOne({ username:"jayliang" }, function(err, doc) { <br>        callback(err, doc); <br>    });<br>});<br>q.push(function(user, callback) { <br>    //do some async/sync works whatever you like<br>    console.log("found user: ", user.name);<br>    callback(null, user);<br>});<br>res.exec(q);</code></pre>res.exec相当于执行了async.waterfall方法，如果队列中的任意一个callback传递了存在的err对象，则队列中断，执行res.sayError(err) 将错误响应给客户端，否则将依次执行队列中的代码段，最后执行res.sayOK</td>
+			<td>执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre class="hightlight"><code>/* Example */
+var q = [];
+q.push(function(callback) {
+    User.findOne({ username:"jayliang" }, function(err, doc) {
+        callback(err, doc);
+    });
+});
+q.push(function(user, callback) {
+    //do some async/sync works whatever you like
+    console.log("found user: ", user.name);
+    callback(null, user);
+});
+res.exec(q);</code></pre>
+res.exec相当于执行了async.waterfall方法，如果队列中的任意一个callback传递了存在的err对象，则队列中断，执行res.sayError(err) 将错误响应给客户端，否则将依次执行队列中的代码段，最后执行res.sayOK</td>
 		</tr>
 	</tbody>
 </table>
@@ -289,8 +301,7 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 <br>
 页面路由代码需要定义在server/router目录或其子目录中，weroll启动时会自动解析并注册到Express中。一个典型的路由文件如下：
 <br>
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./server/router/index.js */
 
 function renderIndexPage(req, res, output, user)
@@ -316,13 +327,11 @@ exports.getRouterMap = function() {
         { url: "/profile", view: "profile", handle: renderProfilePage, needLogin:true, loginPage:"signin" }
     ];
 }
-</code>
-</pre>
+</code></pre>
 <br>
 <h4>视图模板引擎</h4>
 weroll默认使用 nunjucks 作为模板引擎，请参考<a href="https://mozilla.github.io/nunjucks/" target="_blank">nunjucks官方文档</a>。你也可以使用其他的模板引擎如jade, ejs, swig等，示例代码如下：
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* 这是main.js中的代码片段 */
 /* var Setting = global.SETTING; */
 
@@ -341,14 +350,12 @@ Setting.viewEngine = {
 };
 //create and start a web application
 var webApp = require("weroll/web/WebApp").start(Setting);
-</code>
-</pre>
+</code></pre>
 
 <br>
 <h4>传递数据到页面</h4>
 在路由的处理方法中，使用output即可输出数据。
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./server/router/index.js */
 
 function renderIndexPage(req, res, output, user)
@@ -358,42 +365,34 @@ function renderIndexPage(req, res, output, user)
 
 /* ./client/views/index.html */
 <div>{{data.msg}}</div> <!-- display "hello!" -->
-</code>
-</pre>
+</code></pre>
 
 在页面中{{data}}对象即是output传递出去的对象，weroll还封装了一些常用的数据传递到页面中。如URL的querystring数据：
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./client/views/index.html */
 /* URL: http://localhost:3000/some_page?page=2&size=10 */
 
 <div>page: {{query.page}}</div> <!-- display "2" -->
 <div>size: {{query.size}}</div> <!-- display "10" -->
-</code>
-</pre>
+</code></pre>
 <br>
 获取服务器当前的时间戳：
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./client/views/index.html */
 
 <div>Server TIme: {{now}}</div>
-</code>
-</pre>
+</code></pre>
 <br>
 获取./server/config/%ENV%/setting.js 里的一些配置数据，如：
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./client/views/index.html */
 
 <div>Site Domain: {{setting.SITE}}</div>   <!-- 网站域名 -->
 <div>Resource CDN: {{setting.RES_CDN_DOMAIN}}</div>   <!-- 静态资源CDN域名 -->
 <div>Site Domain: {{setting.API_GATEWAY}}</div>   <!-- API Gateway的URL地址 -->
-</code>
-</pre>
+</code></pre>
 你也可以自定义或者扩展setting里的数据：
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./main.js */
 
 require("weroll/web/WebApp").start(Setting, function(webApp) {
@@ -403,15 +402,13 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
 
 /* ./client/views/index.html */
 
-<link type="text/css" rel="stylesheet" href="{{setting.RES_CDN_DOMAIN}}/css/{{setting.defaultStyle}}.css" >
-</code>
-</pre>
+&lt;link type="text/css" rel="stylesheet" href="{{setting.RES_CDN_DOMAIN}}/css/{{setting.defaultStyle}}.css" &gt;
+</code></pre>
 
 <br>
 <h4>自定义模板引擎过滤器</h4>
 通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：
-<pre class="highlight">
-<code>
+<pre class="highlight"><code>
 /* ./server/router/index.js */
 
 var ViewEngineFilter = require("weroll/utils/ViewEngineFilter");
@@ -433,15 +430,14 @@ function renderSomePage(req, res, params) {
 
 
 /* ./client/views/some_page.html */
-
+&lt;script&gt;
 var list = {{data.list|json}};
 console.log(list[0]); //echo Jay
-</code>
-</pre>
+&lt;/script&gt;
+</code></pre>
 
 
 
-<br>
 <br>
 <br>
 <h4>一个最精简的weroll应用程序骨架如下：</h4>
