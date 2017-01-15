@@ -4,15 +4,15 @@ weroll基于MongoDB，Redis，Express 4.x以及APIServer（基于原生http库�
 <br><br>
 主要特点如下：<br>
 <ul>
-	<li>合理的项目文件结构，区分路由逻辑和API逻辑</li>
-	<li>路由和API可定义访问权限</li>
-	<li>API定义支持常用的数据校验（如字符，数字，手机号等），支持必须参数和可选参数设定</li>
-	<li>提供API调试工具，自动显示API描述和参数说明</li>
-	<li>支持多环境配置, 可根据启动参数切换运行环境, 如dev, test, production等, 不同的环境使用不同的配置文件，由开发者自由定义</li>
-	<li>使用Mongoose操作数据库，简化了Schema定义流程，简化了Model使用方式</li>
-	<li>封装了socket.io可以实现基本的websocket实时数据交互</li>
-	<li>集成一些常见的web服务功能，如用户权限维护，邮件发送，短信发送/验证码检查等</li>
-	<li>面向微服务架构，多个weroll应用之间可以配置成为一个生态系统，相互之间可以调用API和推送消息</li>
+    <li>合理的项目文件结构，区分路由逻辑和API逻辑</li>
+    <li>路由和API可定义访问权限</li>
+    <li>API定义支持常用的数据校验（如字符，数字，手机号等），支持必须参数和可选参数设定</li>
+    <li>提供API调试工具，自动显示API描述和参数说明</li>
+    <li>支持多环境配置, 可根据启动参数切换运行环境, 如dev, test, production等, 不同的环境使用不同的配置文件，由开发者自由定义</li>
+    <li>使用Mongoose操作数据库，简化了Schema定义流程，简化了Model使用方式</li>
+    <li>封装了socket.io可以实现基本的websocket实时数据交互</li>
+    <li>集成一些常见的web服务功能，如用户权限维护，邮件发送，短信发送/验证码检查等</li>
+    <li>面向微服务架构，多个weroll应用之间可以配置成为一个生态系统，相互之间可以调用API和推送消息</li>
 </ul>
 
 <br>
@@ -58,64 +58,64 @@ weroll提供了WebApp和APIServer实现http服务。WebApp是对Express 4.X的�
 <br>
 以下是2者的详细区别说明
 <table>
-	<thead>
-		<tr>
-			<td style="width:135px;"></td>
-			<td>WebApp</td>
-			<td>APIServer</td>
-			<td></td>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>VIew Render</td>
-			<td>Yes</td>
-			<td>No</td>
-			<td>APIServer only support __test page</td>
-		</tr>
-		<tr>
-			<td>Custom Router</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>API</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td>APIServer faster 30-40%</td>
-		</tr>
-		<tr>
-			<td>User Session</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>MongoDB</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>Redis</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>Cache</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td></td>
-		</tr>
-		<tr>
-			<td>Multi Instances</td>
-			<td>Yes</td>
-			<td>Yes</td>
-			<td></td>
-		</tr>
-	</tbody>
+    <thead>
+        <tr>
+            <td style="width:135px;"></td>
+            <td>WebApp</td>
+            <td>APIServer</td>
+            <td></td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>VIew Render</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>APIServer only support __test page</td>
+        </tr>
+        <tr>
+            <td>Custom Router</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>API</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>APIServer faster 30-40%</td>
+        </tr>
+        <tr>
+            <td>User Session</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>MongoDB</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Redis</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Cache</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Multi Instances</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td></td>
+        </tr>
+    </tbody>
 </table>
 
 
@@ -181,26 +181,26 @@ weroll的API统一使用 [POST] http://域名/api 作为入口，请求和响应
 
 /* 配置这组API的前缀名和各个接口的参数定义 */
 exports.config = {
-	name: "user",
-	enabled: true,
-	security: {
-		/* 按照以下注释的写法，API调试工具可以自动识别这些说明并在工具中显示出来 */
-		//@hello 打个招呼 @name 名字 @gender 性别,1-男,2-女
-		"hello":{ needLogin:false, checkParams:{ name:"string" }, optionalParams:{ gender:"int" } },
-		//@bye 说再见 @name 名字
-		"bye":{ needLogin:false, optionalParams:{ name:"string" } }
-	}
+    name: "user",
+    enabled: true,
+    security: {
+        /* 按照以下注释的写法，API调试工具可以自动识别这些说明并在工具中显示出来 */
+        //@hello 打个招呼 @name 名字 @gender 性别,1-男,2-女
+        "hello":{ needLogin:false, checkParams:{ name:"string" }, optionalParams:{ gender:"int" } },
+        //@bye 说再见 @name 名字
+        "bye":{ needLogin:false, optionalParams:{ name:"string" } }
+    }
 };
 
 exports.hello = function(req, res, params) {
-	var name = params.name;
-	var gender = params.gender;
-	res.sayOK({ msg:`欢迎, 你的名字是${name}, 性别是${gender == 1 ? "男" : "女"}` });
+    var name = params.name;
+    var gender = params.gender;
+    res.sayOK({ msg:&#96;欢迎, 你的名字是${name}, 性别是${gender == 1 ? "男" : "女"}&#96; });
 }
 
 exports.bye = function(req, res, params) {
-	var name = params.name || "陌生人";
-	res.sayOK({ msg:`再见, ${name}` });
+    var name = params.name || "陌生人";
+    res.sayOK({ msg:&#96;再见, ${name}&#96; });
 }
 </code>
 </pre>
@@ -225,37 +225,37 @@ http://localhost:3000/__test
 <br>
 weroll对req对象添加了一些新的属性和方法，以便我们更有效率的开发<br>
 <table>
-	<thead>
-		<tr>
-			<td style="width:140px;">Property</td>
-			<td>Description</td>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>req._clientIP </td>
-			<td style="text-align:left;">客户端的IP地址</td>
-		</tr>
-		<tr>
-			<td>req._identifyID </td>
-			<td style="text-align:left;">客户端的uuid，由weroll生成，可用于统计在线用户数等业务场景，请参考<a href="https://github.com/jayliang701/weroll/blob/master/web/WebRequestPreprocess.js#L153" target="_blank">源代码</a></td>
-		</tr>
-	</tbody>
+    <thead>
+        <tr>
+            <td style="width:140px;">Property</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>req._clientIP </td>
+            <td style="text-align:left;">客户端的IP地址</td>
+        </tr>
+        <tr>
+            <td>req._identifyID </td>
+            <td style="text-align:left;">客户端的uuid，由weroll生成，可用于统计在线用户数等业务场景，请参考<a href="https://github.com/jayliang701/weroll/blob/master/web/WebRequestPreprocess.js#L153" target="_blank">源代码</a></td>
+        </tr>
+    </tbody>
 </table>
 <br>
 <table>
-	<thead>
-		<tr>
-			<td style="width:140px;">Method</td>
-			<td>Description</td>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>req.callAPI()</td>
-			<td style="text-align:left;">调用其他的API方法，如 req.callAPI("user.hello", { name:"Jay" }, session, callBack)。这样我们就可以在任何一个路由或者任何一个API代码段中，调用任何一个API，使API得到重复利用。</td>
-		</tr>
-	</tbody>
+    <thead>
+        <tr>
+            <td style="width:140px;">Method</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>req.callAPI()</td>
+            <td style="text-align:left;">调用其他的API方法，如 req.callAPI("user.hello", { name:"Jay" }, session, callBack)。这样我们就可以在任何一个路由或者任何一个API代码段中，调用任何一个API，使API得到重复利用。</td>
+        </tr>
+    </tbody>
 </table>
 
 
@@ -269,48 +269,48 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 同样，weroll也对res对象添加了一些新的方法
 <br>
 <table>
-	<thead>
-		<tr>
-			<td style="width:140px;">Method</td>
-			<td>Description</td>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>res.sayOK()</td>
-			<td style="text-align:left;">响应正确结果给客户端，使用json对象作为参数，如果不写参数，则客户端会得到 { code:1, data:{ flag:1 }, msg:"OK" }</td>
-		</tr>
-		<tr>
-			<td>res.sayError()</td>
-			<td style="text-align:left;">响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre class="highlight"><code>/* Example */
+    <thead>
+        <tr>
+            <td style="width:140px;">Method</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>res.sayOK()</td>
+            <td style="text-align:left;">响应正确结果给客户端，使用json对象作为参数，如果不写参数，则客户端会得到 { code:1, data:{ flag:1 }, msg:"OK" }</td>
+        </tr>
+        <tr>
+            <td>res.sayError()</td>
+            <td style="text-align:left;">响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre class="highlight"><code>/* Example */
 res.sayError(new Error("ops"));
 res.sayError("ops");
 res.sayError(100, "ops");
 res.sayError(Error.create(100, "ops"));</code></pre></td>
-		</tr>
-		<tr>
-			<td>res.done()</td>
-			<td style="text-align:left;">响应结果给客户端<br><pre class="highlight"><code>/* Example */
+        </tr>
+        <tr>
+            <td>res.done()</td>
+            <td style="text-align:left;">响应结果给客户端<br><pre class="highlight"><code>/* Example */
 res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
-		</tr>
-		<tr>
-			<td>res.exec()</td>
-			<td style="text-align:left;">执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre class="hightlight"><code>/* Example */
+        </tr>
+        <tr>
+            <td>res.exec()</td>
+            <td style="text-align:left;">执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre class="hightlight"><code>/* Example */
 var q = [];
 q.push(function(callback) {
-	User.findOne({ username:"jayliang" }, function(err, doc) {
-		callback(err, doc);
-	});
+    User.findOne({ username:"jayliang" }, function(err, doc) {
+        callback(err, doc);
+    });
 });
 q.push(function(user, callback) {
-	//do some async/sync works whatever you like
-	console.log("found user: ", user.name);
-	callback(null, user);
+    //do some async/sync works whatever you like
+    console.log("found user: ", user.name);
+    callback(null, user);
 });
 res.exec(q);</code></pre>
 res.exec相当于执行了async.waterfall方法，如果队列中的任意一个callback传递了存在的err对象，则队列中断，执行res.sayError(err) 将错误响应给客户端，否则将依次执行队列中的代码段，最后执行res.sayOK</td>
-		</tr>
-	</tbody>
+        </tr>
+    </tbody>
 </table>
 
 <br>
@@ -324,27 +324,27 @@ res.exec相当于执行了async.waterfall方法，如果队列中的任意一个
 /* ./server/router/index.js */
 
 function renderIndexPage(req, res, output, user)
-	/* 在页面中使用 {{data.msg}} 可显示hello字符串 */
-	output({ msg:"hello!" });
+    /* 在页面中使用 {{data.msg}} 可显示hello字符串 */
+    output({ msg:"hello!" });
 }
 
 function renderProfilePage(req, res, output, user) {
-	output({ nickname:user.nickname, head:user.head });
+    output({ nickname:user.nickname, head:user.head });
 }
 
 exports.getRouterMap = function() {
-	return [
-		/* url           浏览器url中域名之后的地址
-			view          对应要渲染的html页面，如index就表示 %项目目录%/client/views/index.html这个页面
-			handle        http GET方式对应的处理方法
-			postHandle    http POST方式对应的处理方法
-			needLogin     是否需要登录才能访问 true/false
-			loginPage     如果没有访问权限，可以指定一个跳转页面，默认是login页面
-								  和view一样，页面定义在 %项目目录%/client/views目录或子目录中
-		*/
-		{ url: "/", view: "index", handle: renderIndexPage, needLogin:false },
-		{ url: "/index", view: "index", handle: renderIndexPage, needLogin:false },
-		{ url: "/profile", view: "profile", handle: renderProfilePage, needLogin:true, loginPage:"signin" }
+    return [
+        /* url           浏览器url中域名之后的地址
+            view          对应要渲染的html页面，如index就表示 %项目目录%/client/views/index.html这个页面
+            handle        http GET方式对应的处理方法
+            postHandle    http POST方式对应的处理方法
+            needLogin     是否需要登录才能访问 true/false
+            loginPage     如果没有访问权限，可以指定一个跳转页面，默认是login页面
+                                  和view一样，页面定义在 %项目目录%/client/views目录或子目录中
+        */
+        { url: "/", view: "index", handle: renderIndexPage, needLogin:false },
+        { url: "/index", view: "index", handle: renderIndexPage, needLogin:false },
+        { url: "/profile", view: "profile", handle: renderProfilePage, needLogin:true, loginPage:"signin" }
     ];
 }
 </code></pre>
@@ -356,17 +356,17 @@ weroll默认使用 nunjucks 作为模板引擎，请参考<a href="https://mozil
 /* var Setting = global.SETTING; */
 
 Setting.viewEngine = {
-	//webApp: an instance of Express
-	init: function(webApp, viewPath, useCache) {
-		var engine = {};
-		/* 务必要实现这个方法 */
-		engine.$setFilter = function(key, func) {
-			//do nothing
-		};
-		webApp.set('view engine', 'ejs');
-		console.log("use view engine: ejs");
-		return engine;
-	}
+    //webApp: an instance of Express
+    init: function(webApp, viewPath, useCache) {
+        var engine = {};
+        /* 务必要实现这个方法 */
+        engine.$setFilter = function(key, func) {
+            //do nothing
+        };
+        webApp.set('view engine', 'ejs');
+        console.log("use view engine: ejs");
+        return engine;
+    }
 };
 //create and start a web application
 var webApp = require("weroll/web/WebApp").start(Setting);
@@ -379,8 +379,8 @@ var webApp = require("weroll/web/WebApp").start(Setting);
 /* ./server/router/index.js */
 
 function renderIndexPage(req, res, output, user)
-	/* 在页面中使用 {{data.msg}} 可显示hello字符串 */
-	output({ msg:"hello!" });
+    /* 在页面中使用 {{data.msg}} 可显示hello字符串 */
+    output({ msg:"hello!" });
 }
 
 /* ./client/views/index.html */
@@ -416,7 +416,7 @@ function renderIndexPage(req, res, output, user)
 /* ./main.js */
 
 require("weroll/web/WebApp").start(Setting, function(webApp) {
-	webApp.COMMON_RESPONSE_DATA.defaultStyle = "blue";
+    webApp.COMMON_RESPONSE_DATA.defaultStyle = "blue";
 });
 
 
@@ -428,7 +428,7 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
 <br>
 <h4>自定义模板引擎过滤器</h4>
 通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：
-<pre class="highlight"><code>
+```
 /* ./server/router/index.js */
 
 var ViewEngineFilter = require("weroll/utils/ViewEngineFilter");
@@ -438,14 +438,14 @@ ViewEngineFilter.addFilter("json", json);
 
 //在页面中正确渲染json数据
 function json(val, express) {
-	return this.env.getFilter("safe")(JSON.stringify(val));
+    return this.env.getFilter("safe")(JSON.stringify(val));
 }
 
 
 /* the render function of page */
 
 function renderSomePage(req, res, params) {
-	output({ list:[ "Jay", "Tracy" ] });
+    output({ list:[ "Jay", "Tracy" ] });
 }
 
 
@@ -454,7 +454,7 @@ function renderSomePage(req, res, params) {
 var list = &#123;&#123;data.list|json&#125;&#125;;
 console.log(list[0]); //echo Jay
 &lt;/script&gt;
-</code></pre>
+```
 
 
 <br>
