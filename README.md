@@ -430,7 +430,7 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
 通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：
 
 ```js
-//./server/router/index.js
+/* ./server/router/index.js */
 
 var ViewEngineFilter = require("weroll/utils/ViewEngineFilter");
 
@@ -443,15 +443,15 @@ function json(val, express) {
 }
 
 
-//the render function of page
+/* the render function of page */
 function renderSomePage(req, res, params) {
     output({ list:[ "Jay", "Tracy" ] });
 }
 
 
-//./client/views/some_page.html
+/* ./client/views/some_page.html */
 <script>
-var list = {{data.list|json}};
+var list = \{\{data.list|json\}\};
 console.log(list[0]); //echo Jay
 </script>
 ```
