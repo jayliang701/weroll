@@ -427,8 +427,7 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
 
 <br>
 <h4>自定义模板引擎过滤器</h4>
-通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：
-
+通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：<br>
 ```
 /* ./server/router/index.js */
 
@@ -451,10 +450,10 @@ function renderSomePage(req, res, params) {
 
 
 /* ./client/views/some_page.html */
-&lt;script&gt;
-var list = &#123;&#123;data.list|json&#125;&#125;;
+<script>
+var list = {{data.list|json}};
 console.log(list[0]); //echo Jay
-&lt;/script&gt;
+</script>
 ```
 
 
