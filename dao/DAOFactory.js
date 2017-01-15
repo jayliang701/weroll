@@ -35,10 +35,13 @@ var checkFolder = function(path, handler) {
     });
 }
 
-//init routers
-checkFolder(PATH.dirname(module.filename), doRegisterSchema);
+exports.Schema = Schema;
 
-exports.init = function(owner) {
+exports.init = function(owner, folder) {
+
+    //init routers
+    checkFolder(folder || PATH.join(global.APP_ROOT, "server/dao"), doRegisterSchema);
+
     for (var key in defs) {
         if (defs[key].isMongooseSchema) {
             var scDef = defs[key].ref();

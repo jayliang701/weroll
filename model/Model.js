@@ -309,6 +309,10 @@ exports.closeDB = function(name, callBack) {
     });
 }
 
+exports.getDBByName = function(name) {
+    return db.getDBByName(name);
+}
+
 // If the Node process ends, close all db connections
 process.on('SIGINT', function() {
     if (db) {

@@ -21,35 +21,48 @@ weroll基于MongoDB，Redis，Express 4.x以及APIServer（基于原生http库�
 <h4>使用weroll-cli快速生成一个weroll应用程序骨架</h4>
 step 1: npm全局安装weroll-cli
 <pre>
-<code>
-$ npm install -g weroll-cli
-</code>
-</pre>
+<code style="width:100%;">$ npm install -g weroll-cli</code></pre>
 <br>
 step 2: 使用weroll命令创建一个极简的weroll项目（在命令行当前目录下，创建DemoApp目录）
 <pre>
-<code>
-$ weroll init mini DemoApp
-</code>
-</pre>
+<code style="width:100%;">$ weroll init mini DemoApp</code></pre>
 如果你已经建立了项目目录，如WebApp，可以进入该目录后再执行weroll init：
 <pre>
-<code>
-$ cd WebApp
-$ weroll init mini
-</code>
-</pre>
+<code style="width:100%;">$ cd WebApp
+$ weroll init mini</code></pre>
 <br>
 step 3: 等待项目创建完成，进入项目目录，启动项目
 <pre>
-<code>
-$ node main.js
-</code>
-</pre>
+<code style="width:100%;">$ node main.js</code></pre>
 你也可以使用其他node进程管理器，如pm2，forever等
 <br>
 <br>
 现在你可以使用浏览器打开 <a href="http://localhost:3000/" target="_blank">http://localhost:3000/</a> 看到应用程序的主页
+
+<br>
+<h4>一个最精简的weroll应用程序骨架如下：</h4>
+<pre>
+<code style="width:100%;">
++ 项目目录
+    └ <i>node_modules</i>
+        └ <i>weroll</i>
+    └ client --------------- web前端
+        └ res ---------------- 静态资源目录，如js/css/img
+    └ views ----------------- html页面
+        └ template --------------- 父模板
+    └ server --------------- 数据&逻辑&服务
+        └ config ----------------- 环境配置文件
+            └ localdev --------------- 本地开发环境的配置
+                cache.config ------------ 缓存配置
+                setting.js ----------- 全局配置
+            └ test
+            └ prod
+        └ router ----------------- 页面路由
+        └ service ------------------- API接口
+    main.js ------------------ 入口
+    package.json
+</code>
+</pre>
 
 <br>
 <h3>HTTP服务</h3>
@@ -126,28 +139,22 @@ APIServer的API并发处理性能比WebApp (实际上就是Express) 高30-40%，
 <br>
 WebApp使用示例：
 <pre class="highlight">
-<code>
-/* ./main.js 中的代码片段 */
+<code style="width:100%;">/* ./main.js 中的代码片段 */
 /* var Setting = global.SETTING; */
 
 var webApp = require("weroll/web/WebApp").start(Setting, function(webApp) {
     //do something after server is setup
-});
-</code>
-</pre>
+});</code></pre>
 <br>
 APIServer使用示例：<br>
 <pre class="highlight">
-<code>
-/* ./main.js 中的代码片段 */
+<code style="width:100%;">/* ./main.js 中的代码片段 */
 /* var Setting = global.SETTING; */
 
 var webApp = require("weroll/web/APIServer").createServer();
 webApp.start(Setting, function(webApp) {
     //do something after server is setup
-});
-</code>
-</pre>
+});</code></pre>
 <br>
 <h3>API</h3>
 <h4>API的规则</h4>
@@ -156,8 +163,7 @@ weroll的API统一使用 [POST] http://域名/api 作为入口，请求和响应
 <br>
 一个典型的weroll的API是这样的：
 <pre>
-<code>
-<b>- General -</b>
+<code style="width:100%;"><b>- General -</b>
 <b>Request URL:</b> http://localhost:3000/api
 <b>Request Method:</b> POST<br>
 <b>- Request Header -</b>
@@ -170,14 +176,13 @@ weroll的API统一使用 [POST] http://域名/api 作为入口，请求和响应
 <b>Content-Type:</b> application/json<br>
 <b>- Response Data -</b>
 {"code":1,"data":{"a":1, "b":2},"msg":"OK"}
-/* code 表示错误码, 1表示正确, data 表示响应的结果数据, msg 表示消息, 当code>1时则是错误的具体描述 */
-</code></pre>
+/* code 表示错误码, 1表示正确, data 表示响应的结果数据, msg 表示消息, 当code>1时则是错误的具体描述 */</code>
+</pre>
 <br>
 <h4>创建你自己的API</h4>
 在 server/service目录中，新建一个脚本文件，比如UserService.js。Service文件必须在server/service目录或其子目录中，weroll在启动时会自动遍历里面的所有js文件，注册API。以下是一个典型的Service代码
 <pre class="highlight">
-<code>
-/* ./server/service/UserService.js */
+<code style="width:100%;">/* ./server/service/UserService.js */
 
 /* 配置这组API的前缀名和各个接口的参数定义 */
 exports.config = {
@@ -201,16 +206,12 @@ exports.hello = function(req, res, params) {
 exports.bye = function(req, res, params) {
     var name = params.name || "陌生人";
     res.sayOK({ msg:&#96;再见, ${name}&#96; });
-}
-</code>
-</pre>
+}</code></pre>
 
 通过以上代码，我们定义了一组前缀为<b>user</b>的接口，并创建了2个具体的方法 <b>user.hello</b> 和<b>user.bye</b><br>
 现在启动程序，在浏览器中打开以下页面使用API调试工具进行测试
 <pre>
-<code>
-http://localhost:3000/__test
-</code>
+<code style="width:100%;">http://localhost:3000/__test</code>
 </pre>
 这是weroll自带的API调试工具，你可以使用这个工具调试进行API接口调试，它会自动解析出所有定义在service目录下的API接口，并识别其中的注释，将其变成API接口描述和参数的说明。<br>
 当然你也可以使用PostMan一类的工具进行调试。
@@ -282,7 +283,7 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
         </tr>
         <tr>
             <td>res.sayError()</td>
-            <td style="text-align:left;">响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre class="highlight"><code>/* Example */
+            <td style="text-align:left;">响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre class="highlight"><code style="width:100%;">/* Example */
 res.sayError(new Error("ops"));
 res.sayError("ops");
 res.sayError(100, "ops");
@@ -290,12 +291,12 @@ res.sayError(Error.create(100, "ops"));</code></pre></td>
         </tr>
         <tr>
             <td>res.done()</td>
-            <td style="text-align:left;">响应结果给客户端<br><pre class="highlight"><code>/* Example */
+            <td style="text-align:left;">响应结果给客户端<br><pre class="highlight"><code style="width:100%;">/* Example */
 res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
         </tr>
         <tr>
             <td>res.exec()</td>
-            <td style="text-align:left;">执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre class="hightlight"><code>/* Example */
+            <td style="text-align:left;">执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre class="hightlight"><code style="width:100%;">/* Example */
 var q = [];
 q.push(function(callback) {
     User.findOne({ username:"jayliang" }, function(err, doc) {
@@ -320,8 +321,7 @@ res.exec相当于执行了async.waterfall方法，如果队列中的任意一个
 <br>
 页面路由代码需要定义在server/router目录或其子目录中，weroll启动时会自动解析并注册到Express中。一个典型的路由文件如下：
 <br>
-<pre class="highlight"><code>
-/* ./server/router/index.js */
+<pre class="highlight"><code style="width:100%;">/* ./server/router/index.js */
 
 function renderIndexPage(req, res, output, user)
     /* 在页面中使用 {{data.msg}} 可显示hello字符串 */
@@ -346,13 +346,11 @@ exports.getRouterMap = function() {
         { url: "/index", view: "index", handle: renderIndexPage, needLogin:false },
         { url: "/profile", view: "profile", handle: renderProfilePage, needLogin:true, loginPage:"signin" }
     ];
-}
-</code></pre>
+}</code></pre>
 <br>
 <h4>视图模板引擎</h4>
 weroll默认使用 nunjucks 作为模板引擎，请参考<a href="https://mozilla.github.io/nunjucks/" target="_blank">nunjucks官方文档</a>。你也可以使用其他的模板引擎如jade, ejs, swig等，示例代码如下：
-<pre class="highlight"><code>
-/* 这是main.js中的代码片段 */
+<pre class="highlight"><code style="width:100%;">/* 这是main.js中的代码片段 */
 /* var Setting = global.SETTING; */
 
 Setting.viewEngine = {
@@ -369,14 +367,12 @@ Setting.viewEngine = {
     }
 };
 //create and start a web application
-var webApp = require("weroll/web/WebApp").start(Setting);
-</code></pre>
+var webApp = require("weroll/web/WebApp").start(Setting);</code></pre>
 
 <br>
 <h4>传递数据到页面</h4>
 在路由的处理方法中，使用output即可输出数据。
-<pre class="highlight"><code>
-/* ./server/router/index.js */
+<pre class="highlight"><code style="width:100%;">/* ./server/router/index.js */
 
 function renderIndexPage(req, res, output, user)
     /* 在页面中使用 {{data.msg}} 可显示hello字符串 */
@@ -384,36 +380,28 @@ function renderIndexPage(req, res, output, user)
 }
 
 /* ./client/views/index.html */
-&lt;div&gt;&#123;&#123;data.msg&#125;&#125;&lt;/div&gt; &lt;!-- display "hello!" --&gt;
-</code></pre>
+&lt;div&gt;&#123;&#123;data.msg&#125;&#125;&lt;/div&gt; &lt;!-- display "hello!" --&gt;</code></pre>
 
 在页面中{{data}}对象即是output传递出去的对象，weroll还封装了一些常用的数据传递到页面中。如URL的querystring数据：
-<pre class="highlight"><code>
-/* ./client/views/index.html */
+<pre class="highlight"><code style="width:100%;">/* ./client/views/index.html */
 /* URL: http://localhost:3000/some_page?page=2&size=10 */
 
 &lt;div&gt;page: &#123;&#123;query.page&#125;&#125;&lt;/div&gt; &lt;!-- display "2" --&gt;
-&lt;div&gt;size: &#123;&#123;query.size&#125;&#125;&lt;/div&gt; &lt;!-- display "10" --&gt;
-</code></pre>
+&lt;div&gt;size: &#123;&#123;query.size&#125;&#125;&lt;/div&gt; &lt;!-- display "10" --&gt;</code></pre>
 <br>
 获取服务器当前的时间戳：
-<pre class="highlight"><code>
-/* ./client/views/index.html */
+<pre class="highlight"><code style="width:100%;">/* ./client/views/index.html */
 
-&lt;div&gt;Server TIme: &#123;&#123;now&#125;&#125;&lt;/div&gt;
-</code></pre>
+&lt;div&gt;Server TIme: &#123;&#123;now&#125;&#125;&lt;/div&gt;</code></pre>
 <br>
 获取./server/config/%ENV%/setting.js 里的一些配置数据，如：
-<pre class="highlight"><code>
-/* ./client/views/index.html */
+<pre class="highlight"><code style="width:100%;">/* ./client/views/index.html */
 
 &lt;div&gt;Site Domain: &#123;&#123;setting.SITE&#125;&#125;&lt;/div&gt;   &lt;!-- 网站域名 --&gt;
 &lt;div&gt;Resource CDN: &#123;&#123;setting.RES_CDN_DOMAIN&#125;&#125;&lt;/div&gt;   &lt;!-- 静态资源CDN域名 --&gt;
-&lt;div&gt;Site Domain: &#123;&#123;setting.API_GATEWAY&#125;&#125;&lt;/div&gt;   &lt;!-- API Gateway的URL地址 --&gt;
-</code></pre>
+&lt;div&gt;Site Domain: &#123;&#123;setting.API_GATEWAY&#125;&#125;&lt;/div&gt;   &lt;!-- API Gateway的URL地址 --&gt;</code></pre>
 你也可以自定义或者扩展setting里的数据：
-<pre class="highlight"><code>
-/* ./main.js */
+<pre class="highlight"><code style="width:100%;">/* ./main.js */
 
 require("weroll/web/WebApp").start(Setting, function(webApp) {
     webApp.COMMON_RESPONSE_DATA.defaultStyle = "blue";
@@ -422,13 +410,12 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
 
 /* ./client/views/index.html */
 
-&lt;link type="text/css" rel="stylesheet" href="&#123;&#123;setting.RES_CDN_DOMAIN&#125;&#125;/css/&#123;&#123;setting.defaultStyle&#125;&#125;.css" &gt;
-</code></pre>
+&lt;link type="text/css" rel="stylesheet" href="&#123;&#123;setting.RES_CDN_DOMAIN&#125;&#125;/css/&#123;&#123;setting.defaultStyle&#125;&#125;.css" &gt;</code></pre>
 
 <br>
 <h4>自定义模板引擎过滤器</h4>
 通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：
-<pre class="highlight"><code>/* ./server/router/index.js */
+<pre class="highlight"><code style="width:100%;">/* ./server/router/index.js */
 
 var ViewEngineFilter = require("weroll/utils/ViewEngineFilter");
 
@@ -452,32 +439,197 @@ function renderSomePage(req, res, params) {
 &lt;script&gt;
 var list = &#123;&#123;data.list|json&#125;&#125;;
 console.log(list[0]); //echo Jay
-&lt;/script&gt;
+&lt;/script&gt;</code></pre>
+<br>
+<h3>MongoDB操作</h3>
+<h4>连接配置</h4>
+在./server/config/%ENV%/setting.js里，model节点配置了MongoDB的连接设置：
+<pre class="highlight"><code style="width:100%;">model: {
+    /* mongodb connection config */
+    db: {
+        host:"127.0.0.1",
+        port:27017,
+        name:"weroll_app",  //the name of database
+        option: {
+            driver:"mongoose",  //or "native"
+            server: {
+                reconnectTries: Number.MAX_VALUE,
+                poolSize: 5,
+                socketOptions: { keepAlive: 120 }
+            }
+        }
+    },
+    /* redis connection config
+    redis: { ... }
+    */
+}</code></pre>
+对于weroll应用来说，数据库并不是必须的，如果你不需要连接数据库，可以将model.db节点注释。<br>
+weroll同时支持<a href="" target="_blank">MongoDB官方的Node.js版连接库</a>，和<a href="" target="_blank">Mongoose</a>库。设置model.db.option.driver，可以选择使用官方driver或Mongoose，option的其他参数请参考<a href="http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/" target="_blank">MongoDB官方文档</a>。
+
+<h4>使用MongoDB Native Driver</h4>
+配置setting.js中的model.db节点：
+<pre class="highlight"><code style="width:100%;">{
+    model: {
+        db: {
+            ...
+            option: {
+                driver: "native",
+                ...
+            }
+        }
+    }
+}</code></pre>
+在main.js入口文件中初始化Model对象，Model对象将根据setting.js中的配置连接MongDB数据库：
+<pre class="highlight"><code style="width:100%;">/* ./main.js */
+var Setting = global.SETTING;
+
+app.addTask(function(cb) {
+    var Model = require("weroll/model/Model");
+    Model.init(Setting.model, function(err) {
+        cb(err);
+    });
+});
 </code></pre>
+Model.DB对象封装了一些常用的CURD方法，我们以findOne为例子，示例代码如下：
+<pre class="highlight"><code style="width:100%;">
+var Model = require("weroll/model/Model");
 
+/* callback */
+/* find(tableName, filter, fields, sort, pagination, callBack) */
+Model.DB.findOne("User", { name:"Jay" }, { _id:1, name:1, phone:1 }, function(err, doc) {
+    console.log(arguments);
+});
 
+/* Promise */
+Model.DB.findOne("User", { name:"Jay" }, { _id:1, name:1, phone:1 }).then(function(doc) {
+    console.log(doc);
+}).catch(function(err) {
+    console.error(err);
+});
+
+/* async & await */
+async function() {
+    var doc = await Model.DB.findOne("User", { name:"Jay" }, { _id:1, name:1, phone:1 });
+    console.log(doc);
+});
+</code></pre>
+详细使用方法，请<a href="https://github.com/jayliang701/weroll-kickstarter-test/blob/master/test/model/MongoDB.js" target="_blank">参考test里的代码</a>。
 <br>
 <br>
-<h4>一个最精简的weroll应用程序骨架如下：</h4>
-<pre>
-<code>
-+ 项目目录
-    └ <i>node_modules</i>
-        └ <i>weroll</i>
-    └ client --------------- web前端
-        └ res ---------------- 静态资源目录，如js/css/img
-    └ views ----------------- html页面
-        └ template --------------- 父模板
-    └ server --------------- 数据&逻辑&服务
-        └ config ----------------- 环境配置文件
-            └ localdev --------------- 本地开发环境的配置
-                cache.config ------------ 缓存配置
-                setting.js ----------- 全局配置
-            └ test
-            └ prod
-        └ router ----------------- 页面路由
-        └ service ------------------- API接口
-    main.js ------------------ 入口
-    package.json
-</code>
-</pre>
+<h4>使用Mongoose</h4>
+配置setting.js中的model.db节点：
+<pre class="highlight"><code style="width:100%;">{
+    model: {
+        db: {
+            ...
+            option: {
+                driver: "mongoose",
+                ...
+            }
+        }
+    }
+}</code></pre>
+然后在main.js入口文件中初始化Model对象和DAOFactory对象：
+<pre class="highlight"><code style="width:100%;">/* ./main.js */
+var Setting = global.SETTING;
+
+app.addTask(function(cb) {
+    var Model = require("weroll/model/Model");
+    Model.init(Setting.model,
+        function(err) {
+            if (err)  return cb(err);
+            var DAOFactory = require("weroll/dao/DAOFactory");
+            DAOFactory.init(Model.getDBByName());
+            /* 可以指定DAO文件的存放目录，默认是 server/dao 目录
+                var folder = require("path").join(global.APP_ROOT, "server/dao");
+                DAOFactory.init(Model.getDBByName(), folder);
+            */
+           cb();
+        });
+});
+</code></pre>
+DAOFactory对象会遍历dao目录和其子目录，将文件名为 XXXSchema.js 的文件作为Schema注册到mongoose实例里。比如UserSchema.js文件，初始化之后，你就可以在应用程序的任何一个地方使用User（User是mongoose里的Model对象）来操作数据，不需要require来导入。<br>
+在weroll中使用mongoose的Model来操作数据库和官方一样，没有什么区别，以下是一段查询的示例代码：<br>
+<pre class="highlight"><code style="width:100%;">/* findOne with callback */
+User.findOne({ phone:"123456" }, function(err, doc) {
+    console.log(arguments);
+});
+
+/* findOne with async/await */
+async function() {
+    var doc = await User.findOne({ phone:"123456" }).exec();
+    console.log(doc);
+}</code></pre>
+一个典型的Schema文件的定义如下：<br>
+<pre class="highlight"><code style="width:100%;">/* ./server/dao/StudentSchema */
+var Schema = require("weroll/dao/DAOFactory").Schema;
+
+var COLLECTION_NAME = "Student";  //定义表名为Student
+
+module.exports = function() {
+    var schema = new Schema({
+        name: { type:String, index:true, required:true },
+        head: "String"
+    }, { collection:COLLECTION_NAME, strict: false });
+
+    schema.pre("save", function(next) {
+        //do something before save
+        next();
+    });
+
+    schema.static("queryByName", function(name, fields, callBack) {
+        return this.find({ name:name }).select(fields).exec(function(err, doc) {
+            callBack && callBack(err, doc);
+        });
+    });
+
+    return { name:COLLECTION_NAME, ref:schema };
+}
+</code></pre>
+定义Schema和官方用法一致，请参考<a href="http://mongoosejs.com/docs/guide.html" target="_blank">mongoose文档</a>。当DAOFactory.init完成之后，直接使用Student即可引用mongoose的Model对象。
+<br>
+<br>
+<h4>连接多个数据库</h4>
+weroll应用允许同时连接多个MongoDB数据库，分为主连接（或者叫默认连接）和其他连接。mongoose库只允许用在主连接上，native driver可以则两者都可以使用。示例代码如下：<br>
+<pre class="highlight"><code style="width:100%;">
+var Model = require("weroll/model/Model");
+/* 建立主连接 */
+var db_config_default = {
+    host:"127.0.0.1",
+    port:27017,
+    name:"mydb",
+    option: { driver:"native" }
+};
+Model.openDB(db_config_default, true, function(err, db) {
+    //default mongodb is connected with native driver
+    //CURD example:
+    Model.DB.findOne();
+});
+
+/* 建立其他连接 */
+var db_config_other = {
+    host:"192.168.1.200",
+    port:27017,
+    name:"yourdb",
+    option: { driver:"native" }
+};
+Model.openDB(db_config_other, false, function(err, db) {
+    //another mongodb is connected with native driver
+    //CURD example:
+    Model.DB.yourdb.findOne();
+    //or
+    Model.DB["yourdb"].update();
+    //"yourdb" is the name of database which defined in config above
+});
+</code></pre>
+关闭数据库连接<br>
+<pre class="highlight"><code style="width:100%;">/* 关闭主连接 */
+Model.closeDB(function(err) {
+    err && console.error(err);
+});
+
+/* 关闭某个连接 */
+Model.closeDB("name of database in config", function(err) {
+    err && console.error(err);
+});
+</code></pre>
