@@ -22,11 +22,9 @@ author:
 paginate:         5
 
 # Custom vars
-version:          0.0.1
+version:          1.0.8
 
-#repository: https://github.com/jayliang701/weroll
-# github:
-  # repo:           https://github.com/jayliang701/weroll
+repository:       https://github.com/jayliang701/weroll
 
 kramdown:
   input: GFM

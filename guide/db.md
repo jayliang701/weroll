@@ -5,9 +5,9 @@ level: 2.4
 parent: guide
 ---
 
-<h3>MongoDB操作</h3>
+<h3>MongoDB</h3>
 <h4>连接配置</h4>
-在./server/config/%ENV%/setting.js里，model节点配置了MongoDB的连接设置：
+在./server/config/%ENV%/setting.js里，model.db节点配置了MongoDB的连接设置：
 <pre><code class="javascript">model: {
     //mongodb connection config
     db: {
