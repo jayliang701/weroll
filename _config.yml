@@ -1,0 +1,32 @@
+gems: [jekyll-paginate]
+
+# Dependencies
+markdown:         redcarpet
+highlighter:      pygments
+
+# Permalinks
+permalink:        pretty
+# relative_permalinks: true
+
+# Setup
+title:            weroll
+tagline:          'A Node.js Framework'
+description:      'Build Your Web Application Fast and Less Codes.'
+url:              https://github.com/jayliang701/weroll
+baseurl:          /
+
+author:
+  name:           'MagicFish Ltd. Inc.'
+  url:            http://www.magicfish.cn/
+
+paginate:         5
+
+# Custom vars
+version:          0.0.1
+
+#repository: https://github.com/jayliang701/weroll
+# github:
+  # repo:           https://github.com/jayliang701/weroll
+
+kramdown:
+  input: GFM
