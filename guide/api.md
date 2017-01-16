@@ -1,7 +1,7 @@
 ---
 layout: guide
 title: API
-level: 2,
+level: 2.2
 parent: guide
 ---
 
@@ -23,7 +23,8 @@ weroll的API统一使用 <b>[POST] http://域名/api</b> 作为入口，请求�
 <b>Content-Type:</b> application/json<br>
 <b>- Response Data -</b>
 {"code":1,"data":{"a":1, "b":2},"msg":"OK"}
-// code 表示错误码, 1表示正确, data 表示响应的结果数据, msg 表示消息, 当 code > 1 时则是错误的具体描述</code></pre>
+// code 表示错误码, 1表示正确, data 表示响应的结果数据, msg 表示消息, 当 code > 1 时则是错误的具体描述
+</code></pre>
 <br>
 <h4>创建你自己的API</h4>
 在 server/service目录中，新建一个脚本文件，比如UserService.js。Service文件必须在server/service目录或其子目录中，weroll在启动时会自动遍历里面的所有js文件，注册API。以下是一个典型的Service代码
@@ -51,9 +52,11 @@ exports.bye = function(req, res, params) {
 }</code></pre>
 
 通过以上代码，我们定义了一组前缀为<b>user</b>的接口，并创建了2个具体的方法 <b>user.hello</b> 和<b>user.bye</b><br>
-现在启动程序，在浏览器中打开以下页面使用API调试工具进行测试
-<pre><code class="html">http://localhost:3000/__test</code></pre>
+现在启动程序，在浏览器中打开以下页面使用API调试工具进行测试<br>
+<pre><code class="css">http://localhost:3000/__test</code></pre>
 这是weroll自带的API调试工具，你可以使用这个工具调试进行API接口调试，它会自动解析出所有定义在service目录下的API接口，并识别其中的注释，将其变成API接口描述和参数的说明。<br>
+<div class="screenshot">![screenshot_1](/public/img/screenshot_1.jpg)</div>
+<br>
 当然你也可以使用PostMan一类的工具进行调试。
 <br>
 <br>
@@ -74,12 +77,12 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
     </thead>
     <tbody>
         <tr>
-            <td>req._clientIP </td>
+            <td>req.&#95;clientIP</td>
             <td style="text-align:left;">客户端的IP地址</td>
         </tr>
         <tr>
-            <td>req._identifyID </td>
-            <td style="text-align:left;">客户端的uuid，由weroll生成，可用于统计在线用户数等业务场景，请参考<a href="https://github.com/jayliang701/weroll/blob/master/web/WebRequestPreprocess.js#L153" target="_blank">源代码</a></td>
+            <td>req.&#95;identifyID</td>
+            <td style="text-align:left;">客户端的uuid，由weroll在客户端第一次请求时生成，可用于统计在线用户数等业务场景，请参考<a href="https://github.com/jayliang701/weroll/blob/master/web/WebRequestPreprocess.js#L153" target="_blank">源代码</a></td>
         </tr>
     </tbody>
 </table>
@@ -107,8 +110,7 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 如果你使用的是APIServer类建立http服务，res对象则是原生http库中的response对象，请参考<a href="https://nodejs.org/api/http.html#http_class_http_serverresponse" target="_blank">Node.js官方文档</a>。
 <br>
 <br>
-同样，weroll也对res对象添加了一些新的方法
-<br>
+同样，weroll也对res对象添加了一些新的方法<br>
 <table>
     <thead>
         <tr>
@@ -119,11 +121,11 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
     <tbody>
         <tr>
             <td>res.sayOK()</td>
-            <td style="text-align:left;">响应正确结果给客户端，使用json对象作为参数，如果不写参数，则客户端会得到 { code:1, data:{ flag:1 }, msg:"OK" }</td>
+            <td style="text-align:left;">响应正确结果给客户端，使用json对象作为参数，如果不写参数，则客户端会得到: <br><pre><code class="json">{ code:1, data:{ flag:1 }, msg:"OK" }</code></pre></td>
         </tr>
         <tr>
             <td>res.sayError()</td>
-            <td style="text-align:left;">响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre><code class="javascript">/* Example */
+            <td style="text-align:left;">响应错误结果给客户端，可使用Error对象，String对象或者[ code, msg ]作为参数<br><pre><code class="javascript">//Example
 res.sayError(new Error("ops"));
 res.sayError("ops");
 res.sayError(100, "ops");
@@ -131,12 +133,12 @@ res.sayError(Error.create(100, "ops"));</code></pre></td>
         </tr>
         <tr>
             <td>res.done()</td>
-            <td style="text-align:left;">响应结果给客户端<br><pre><code class="javascript">/* Example */
+            <td style="text-align:left;">响应结果给客户端<br><pre><code class="javascript">//Example
 res.done(err, result);</code></pre>如果err存在，则执行res.sayError(err)，否则将执行res.sayOK(result)</td>
         </tr>
         <tr>
             <td>res.exec()</td>
-            <td style="text-align:left;">执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre class="hightlight"><code style="width:100%;">/* Example */
+            <td style="text-align:left;">执行一个数组任务队列，然后将结果响应给客户端。使用数组对象作为参数，请参考<a href="http://caolan.github.io/async/docs.html#waterfall" target="_blank">async库中的waterfall方法</a><br><pre><code class="javascript">//Example
 var q = [];
 q.push(function(callback) {
     User.findOne({ username:"jayliang" }, function(err, doc) {

@@ -17,7 +17,7 @@
         `layout: page` in the front-matter. See readme for usage.
       {% endcomment %}
 
-      {% assign pages_list = site.pages %}
+      {% assign pages_list = (site.pages | sort: 'level') %}
       {% for node in pages_list %}
         {% if node.title != null %}
           {% if node.level == 1 %}
@@ -25,7 +25,7 @@
             {% if node.title == "Guide" %}
               {% for node2 in pages_list %}
                 {% if node2.title != null %}
-                    {% if node2.level == 2 %}
+                    {% if node2.level >= 2 %}
                         {% if node2.parent == node.key %}
                         <a class="sidebar-nav-item{% if page.url == node2.url %} active{% endif %} level2" href="{{ node2.url }}"> - {{ node2.title }}</a>
                         {% endif %}

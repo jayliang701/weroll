@@ -1,7 +1,7 @@
 ---
 layout: guide
 title: HTTP
-level: 2,
+level: 2.1
 parent: guide
 ---
 

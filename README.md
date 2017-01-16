@@ -17,18 +17,18 @@ weroll基于MongoDB，Redis，Express 4.x以及APIServer（基于原生http库�
 Github主页：<a href="https://jayliang701.github.io/weroll/" target="_blank">https://jayliang701.github.io/weroll/</a>
 
 <br>
-<br>
 <h3>Quick Start</h3>
-<h4>使用weroll-cli快速生成一个weroll应用程序骨架</h4>
-step 1: npm全局安装weroll-cli
+<h4>使用weroll-cli</h4>
+weroll-cli 是一个帮助你快速生成一个weroll应用程序骨架的命令行工具。<br><br>
+<b>Step 1:</b> npm全局安装weroll-cli
 <pre class="highlight"><code style="width:100%;">$ npm install -g weroll-cli</code></pre>
-<br>
+
 step 2: 使用weroll命令创建一个极简的weroll项目（在命令行当前目录下，创建DemoApp目录）
 <pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp</code></pre>
 如果你已经建立了项目目录，如WebApp，可以进入该目录后再执行weroll init：
 <pre class="highlight"><code style="width:100%;">$ cd WebApp
 $ weroll init mini</code></pre>
-<br>
+
 step 3: 等待项目创建完成，进入项目目录，启动项目
 <pre class="highlight"><code style="width:100%;">$ node main.js</code></pre>
 你也可以使用其他node进程管理器，如pm2，forever等
@@ -36,4 +36,4 @@ step 3: 等待项目创建完成，进入项目目录，启动项目
 <br>
 现在你可以使用浏览器打开 <a href="http://localhost:3000/" target="_blank">http://localhost:3000/</a> 看到应用程序的主页
 <br>
-Let's roll!
+<h3>Let's roll!</h3>
