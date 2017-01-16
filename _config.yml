@@ -1,8 +1,8 @@
 gems: [jekyll-paginate]
 
 # Dependencies
-markdown:         redcarpet
-highlighter:      pygments
+markdown:         kramdown
+highlighter:      rouge
 
 # Permalinks
 permalink:        pretty
@@ -28,3 +28,4 @@ repository:       https://github.com/jayliang701/weroll
 
 kramdown:
   input: GFM
+  hard_wrap: false

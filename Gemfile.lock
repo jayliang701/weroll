@@ -1,5 +1,5 @@
 GEM
-  remote: http://mirror.sysu.edu.cn/rubygems/
+  remote: https://gems.ruby-china.org/
   specs:
     activesupport (4.2.7)
       i18n (~> 0.7)
@@ -19,6 +19,7 @@ GEM
     execjs (2.7.0)
     faraday (0.11.0)
       multipart-post (>= 1.2, < 3)
+    ffi (1.9.17)
     ffi (1.9.17-x64-mingw32)
     forwardable-extended (2.6.0)
     gemoji (2.1.0)
@@ -166,6 +167,8 @@ GEM
     minitest (5.10.1)
     multipart-post (2.0.0)
     net-dns (0.8.0)
+    nokogiri (1.6.8.1)
+      mini_portile2 (~> 2.1.0)
     nokogiri (1.6.8.1-x64-mingw32)
       mini_portile2 (~> 2.1.0)
     octokit (4.6.2)
@@ -176,7 +179,7 @@ GEM
     rb-fsevent (0.9.8)
     rb-inotify (0.9.7)
       ffi (>= 0.5.0)
-    redcarpet (3.3.4)
+    redcarpet (3.4.0)
     rouge (1.11.1)
     safe_yaml (1.0.4)
     sass (3.4.23)
@@ -193,6 +196,7 @@ GEM
     unicode-display_width (1.1.3)
 
 PLATFORMS
+  ruby
   x64-mingw32
 
 DEPENDENCIES

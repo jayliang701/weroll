@@ -15,7 +15,7 @@ weroll的API统一使用 <b>[POST] http://域名/api</b> 作为入口，请求�
 <b>Request URL:</b> http://localhost:3000/api
 <b>Request Method:</b> POST<br>
 <b>- Request Header -</b>
-<b>Content-Type:</b> application/json; charset=UTF-8
+<b>Content-Type:</b> application/json; charset=UTF-8<br>
 <b>- Request Payload / Post Data -</b>
 { "method":"user.hello","data":{"name":"Jay","gender":"1"} }
 // method 表示接口名称, data 表示请求参数<br>
