@@ -17,7 +17,6 @@ baseurl:          /
 
 author:
   name:           'MagicFish Ltd. Inc.'
-  url:            http://www.magicfish.cn/
 
 paginate:         5
 
