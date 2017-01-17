@@ -11,7 +11,7 @@ permalink:        pretty
 # Setup
 title:            weroll
 tagline:          'A Node.js Framework'
-description:      'Build Your Web Application Fast and Less Codes.'
+description:      'Build Your Micro-Service System Fast and Less Codes.'
 url:              https://github.com/jayliang701/weroll
 baseurl:          /
 
@@ -22,7 +22,7 @@ author:
 paginate:         5
 
 # Custom vars
-version:          1.0.8
+version:          1.0.9
 
 repository:       https://github.com/jayliang701/weroll
 
