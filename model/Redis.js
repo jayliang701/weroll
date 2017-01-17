@@ -400,15 +400,25 @@ exports.do = function (cmd, args, callBack) {
 }
 
 exports.subscribe = function (channel, callBack) {
-    client.subscribe(channel, callBack);
+    return new Promise(function (resolve, reject) {
+        client.subscribe(channel, function(err) {
+            callBack && callBack(err);
+            err ? reject(err) : resolve();
+        });
+    });
 }
 
 exports.publish = function (channel, message, callBack) {
-    client.publish(channel, message, callBack);
+    return new Promise(function (resolve, reject) {
+        client.publish(channel, message, function(err) {
+            callBack && callBack(err);
+            err ? reject(err) : resolve();
+        });
+    });
 }
 
-exports.on = function (event, callBack) {
-    client.on(event, callBack);
+exports.on = function (event, handler) {
+    client.on(event, handler);
 }
 
 exports.join = function(key, preKey) {
@@ -511,8 +521,16 @@ var groups = {};
 var KEY_CACHE = {};
 var GROUP_REG = /@[a-zA-Z0-9]+->/;
 
-exports.createClient = function(config) {
-    return REDIS.createClient(config.port, config.host, { auth_pass: config.pass });
+exports.createClient = function(config, connectCallback) {
+    config = config || setting;
+    var ins = REDIS.createClient(config.port, config.host, { auth_pass: config.pass });
+    if (connectCallback) {
+        ins.on("connect", function() {
+            ins.removeListener("connect", arguments.callee);
+            connectCallback(ins);
+        });
+    }
+    return ins;
 }
 
 exports.start = function(option, callBack) {

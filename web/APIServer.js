@@ -130,11 +130,6 @@ function APIServer() {
                 res.end();
                 return;
             }
-            html = html.replace(/\{\{RES_CDN_DOMAIN\}\}/mg, APP_SETTING.cdn.res);
-            html = html.replace(/\{\{SITE_DOMAIN\}\}/mg, APP_SETTING.site);
-            html = html.replace(/\{\{API_GATEWAY\}\}/mg, APP_SETTING.site + "api");
-            html = html.replace(/\{\{TIME\}\}/mg, Date.now());
-            html = html.replace(/\{\{services\}\}/mg, JSON.stringify(DEBUG_SERVICE_LIST));
             res.end(html);
         });
     }

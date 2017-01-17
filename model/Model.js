@@ -94,7 +94,7 @@ function syncUpLevelCacheHandler(event) {
     var originalKey = arguments[1];
     var val = arguments[2];
 
-    console.log("sync cache event ---> " + key, "    originalKey --> ", originalKey);
+    //console.log("sync cache event ---> " + key, "    originalKey --> ", originalKey);
     if (!SYNC_UP_LEVEL_CACHE[key]) return;
 
     CACHE_POOL[1].save(originalKey, val);

@@ -20,6 +20,10 @@ exports.getSetting = function() {
 }
 
 exports.onServeReady = function(target, handler) {
+    if (exports[target]) {
+        handler && handler();
+        return;
+    }
     if (!client_registerHandler[target]) client_registerHandler[target] = [];
     client_registerHandler[target].push(handler);
 }
@@ -48,10 +52,10 @@ exports.__register = function(target, client) {
 }
 
 exports.callAPI = function() {
-    if (arguments.length < 4) {
-        return exports.__callAPI.apply(this, [ "core", arguments[0], arguments[1], arguments[2] ]);
-    } else {
+    if (typeof arguments[0] == "string" && typeof arguments[1] == "string") {
         return exports.__callAPI.apply(this, [ arguments[0], arguments[1], arguments[2], arguments[3] ]);
+    } else {
+        return exports.__callAPI.apply(this, [ "core", arguments[0], arguments[1], arguments[2] ]);
     }
 }
 
@@ -159,14 +163,14 @@ exports.init = function(config, customSetting) {
             var list = server_notifyHandlers[client + "@" + event];
             if (list && list.length > 0) {
                 list.forEach(function(handler) {
-                    if (handler) handler(data);
+                    if (handler) handler(data, client);
                 });
             }
 
             list = server_notifyHandlers[event];
             if (list && list.length > 0) {
                 list.forEach(function(handler) {
-                    if (handler) handler(data);
+                    if (handler) handler(data, client);
                 });
             }
         });
