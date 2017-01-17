@@ -1,1 +1,1 @@
-bundle exec jekyll serve --port 8900
+bundle exec jekyll serve --port 8900 --force_polling
