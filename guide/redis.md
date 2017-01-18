@@ -1,7 +1,7 @@
 ---
 layout: guide
 title: Redis
-level: 2.5
+level: 2.05
 parent: guide
 ---
 

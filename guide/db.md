@@ -1,7 +1,7 @@
 ---
 layout: guide
 title: MongoDB
-level: 2.4
+level: 2.04
 parent: guide
 ---
 

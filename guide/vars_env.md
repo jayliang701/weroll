@@ -1,7 +1,7 @@
 ---
 layout: guide
 title: Vars & Env
-level: 2.0
+level: 2.00
 parent: guide
 ---
 
