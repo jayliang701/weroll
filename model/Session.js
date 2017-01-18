@@ -33,76 +33,87 @@ Session.prototype.init = function(params) {
 
 Session.prototype.save = function(user, callBack) {
 
+    var userID = (user.id ? user.id : user.userid) || user._id;
     var tokentimestamp = Date.now();
 
     var sess = {};
-    sess.userid = user.id;
+    sess.userid = userID;
     sess.token = user.token || Utils.randomString(16);
     sess.tokentimestamp = tokentimestamp;
     sess.type = user.type;
-    sess.extra = user.extra;
+    if (user.extra) sess.extra = user.extra;
 
     var key = this.formatKey(sess.userid, sess.token);
 
     var ins = this;
-    Redis.setHashMulti(key, sess, function(redisRes, redisErr) {
-        if (redisRes) {
-            Memory.save(key, sess, ins.config.cacheExpireTime, null);
-            if (callBack) callBack(sess);
-        } else {
-            if (callBack) callBack(null, redisErr);
-        }
-    }, ins.config.tokenExpireTime);
+    return new Promise(function (resolve, reject) {
+        Redis.setHashMulti(key, sess, function(redisErr, redisRes) {
+            if (redisRes) {
+                Memory.save(key, sess, ins.config.cacheExpireTime, null);
+                callBack && callBack(null, sess);
+                resolve(sess);
+            } else {
+                callBack && callBack(redisErr);
+                reject(redisErr);
+            }
+        }, ins.config.tokenExpireTime);
+    });
 }
 
 Session.prototype.remove = function(user, callBack) {
-    var id = user.id ? user.id : user.userid;
+    var id = (user.id ? user.id : user.userid) || user._id;
     var key = this.formatKey(id, user.token);
     Memory.remove(key);
-    Redis.del(key, function(redisRes, redisErr) {
-        if (redisRes) {
-            if (callBack) callBack(true);
-        } else {
-            if (callBack) callBack(false, redisErr);
-        }
+    return new Promise(function (resolve, reject) {
+        Redis.del(key, function(err) {
+            callBack && callBack(err);
+            err ? reject(err) : resolve();
+        });
     });
 }
 
 Session.prototype.refresh = function(user) {
-    var id = user.id ? user.id : user.userid;
+    var id = (user.id ? user.id : user.userid) || user._id;
     var key = this.formatKey(id, user.token);
     Memory.setExpireTime(key, this.config.tokenExpireTime);
     Redis.setExpireTime(key, this.config.tokenExpireTime);
 }
 
 Session.prototype.check = function(id, token, callBack) {
-
-    var key = this.formatKey(id, token);
-    var cache = Memory.read(key);
-    if (cache) {
-        if (this.checkSess(id, token, cache)) {
-            callBack(1, cache);
-        } else {
-            callBack(0);
-        }
-        return;
-    }
-
     var ins = this;
-    Redis.getHashAll(key, function(sess, err) {
-        if (err) {
-            callBack(-1, null, err);
-        } else {
-            if (sess) {
-                if (ins.checkSess(id, token, sess)) {
-                    callBack(1, sess);
-                } else {
-                    callBack(0);
-                }
+    return new Promise(function (resolve, reject) {
+        var key = ins.formatKey(id, token);
+        var cache = Memory.read(key);
+        if (cache) {
+            if (ins.checkSess(id, token, cache)) {
+                callBack && callBack(null, cache);
+                resolve(cache);
             } else {
-                callBack(0);
+                callBack && callBack(null, null);
+                resolve();
             }
+            return;
         }
+
+        return Redis.getHashAll(key, function(sess, err) {
+            if (err) {
+                callBack && callBack(err);
+                reject(err);
+            } else {
+                if (sess) {
+                    if (ins.checkSess(id, token, sess)) {
+                        callBack && callBack(null, sess);
+                        resolve(sess);
+                    } else {
+                        callBack && callBack(null, null);
+                        resolve();
+                    }
+                } else {
+                    callBack && callBack(null, null);
+                    resolve();
+                }
+            }
+        });
     });
 }
 

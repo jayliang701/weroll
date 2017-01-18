@@ -281,7 +281,7 @@ function server_onClientConnected(socket) {
             tasks.push([ "SADD", Redis.join(`room_node_${roomID}`), CONFIG.routeAddress, function(err) {
                 if (err) traceError("Redis.sadd[2] error when enter room --> " + err.toString());
             } ]);
-            Redis.multi(tasks, function(flag, err) {
+            Redis.multi(tasks, function(err) {
                 var res;
                 if (callBack) {
                     res = callBack(err);
@@ -326,7 +326,7 @@ function server_onClientConnected(socket) {
                 } ]);
             }
 
-            Redis.multi(tasks, function(flag, err) {
+            Redis.multi(tasks, function(err) {
                 var res;
                 if (callBack) {
                     res = callBack(err);
@@ -410,8 +410,8 @@ function server_onClientConnected(socket) {
             } ]);
         }
         updateStatus();
-        Redis.multi(tasks, function(flag) {
-            if (flag) {
+        Redis.multi(tasks, function(err) {
+            if (!err) {
                 server.initedCount ++;
                 socket.emit("$init", { msg:"hello", time:Date.now(), socketID:socket.id, clientID:socket.clientID });
                 if (DEBUG) {
@@ -446,8 +446,8 @@ function server_onClientConnected(socket) {
             socket.clientID = data.clientID || socket.id;
         }
         if (sess) {
-            Session.getSharedInstance().check(sess.userid, sess.token, function(flag, sess, err) {
-                if (!err && flag == 1) {
+            Session.getSharedInstance().check(sess.userid, sess.token, function(err, sess) {
+                if (!err && sess) {
                     socket.info.userid = sess.userid;
                     socket.info.token = sess.token;
                     socket.info.tokentimestamp = sess.tokentimestamp;
@@ -523,7 +523,7 @@ function server_onClientConnected(socket) {
             if (CONFIG.useRoute) {
                 tasks.push([ "SREM", Redis.join(`conn_${socket.clientID}`), CONFIG.routeAddress ]);
             }
-            Redis.multi(tasks, function(flag, err) {
+            Redis.multi(tasks, function(err) {
                 if (err) traceError("clean user data after disconnect error --> " + err.toString());
             });
 

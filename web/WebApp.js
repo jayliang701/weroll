@@ -292,7 +292,7 @@ function registerRouter(r) {
 
         App.handleUserSession(req, res, function(flag, user) {
 
-            if (flag == false && r.needLogin == true) {
+            if (!flag && r.needLogin == true) {
                 redirectToLogin(req, res, r.loginPage);
                 return;
             }
@@ -358,11 +358,11 @@ App.handleUserSession = function(req, res, next, error, auth) {
             //no cookies...
             next(0, user);
         } else {
-            Session.getSharedInstance().check(userid, token, function(flag, sess, err) {
+            Session.getSharedInstance().check(userid, token, function(err, sess) {
                 if (err) {
                     error(err);
                 } else {
-                    if (flag == 1) {
+                    if (sess) {
                         //get user info from cache
                         Model.cacheRead(["user_info", userid], function(uc) {
                             if (uc) {
@@ -373,6 +373,13 @@ App.handleUserSession = function(req, res, next, error, auth) {
                             user.userid = userid;
                             user.token = token;
                             user.tokentimestamp = tokentimestamp;
+                            if (sess.extra) {
+                                try {
+                                    user.extra = JSON.parse(sess.extra);
+                                } catch (exp) {
+                                    user.extra = {};
+                                }
+                            }
                             user.type = parseInt(sess.type);
                             next(1, user);
                         });

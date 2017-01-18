@@ -221,7 +221,7 @@ function APIServer() {
                     res.setAuth(user);
                 }
 
-                if (flag == false) {
+                if (!flag) {
                     if (security.needLogin != true) {
                         service[method](req, res, params, user);
                     } else {
@@ -288,11 +288,11 @@ function APIServer() {
                 //no cookies...
                 next(0, user);
             } else {
-                this.Session.check(userid, token, function(flag, sess, err) {
+                this.Session.check(userid, token, function(err, sess) {
                     if (err) {
                         error(err);
                     } else {
-                        if (flag == 1) {
+                        if (sess) {
                             //get user info from cache
                             Model.cacheRead(["user_info", userid], function(uc) {
                                 if (uc) {
@@ -303,6 +303,13 @@ function APIServer() {
                                 user.userid = userid;
                                 user.token = token;
                                 user.tokentimestamp = tokentimestamp;
+                                if (sess.extra) {
+                                    try {
+                                        user.extra = JSON.parse(sess.extra);
+                                    } catch (exp) {
+                                        user.extra = {};
+                                    }
+                                }
                                 user.type = parseInt(sess.type);
                                 next(1, user);
                             });
