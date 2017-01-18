@@ -6,19 +6,235 @@ parent: guide
 ---
 
 <h3>Authorization</h3>
-<h4>客户端授权</h4>
-由于数据库操作对weroll应用不是必须的，因此weroll没有集成用户账户管理功能，需要开发者根据自己需要实现维护账户数据，登录验证，和密码修改等功能.
+<h4>账户登录和管理</h4>
+由于数据库操作对weroll应用不是必须的，因此weroll没有集成用户账户管理功能，需要开发者根据自己需要实现维护账户数据，登录验证，和密码修改等功能。
 <br>
 <br>
 <h4>Session</h4>
-weroll内置了Session管理功能，使用 weroll/model/Session 对象可以对用户的登录会话进行管理和校验.<br>
-weroll的Session采用的是令牌校验的机制,即当用户登录成功之后,weroll生成一个16位的随机字符串作为令牌(以下我们称为token),并将token传递给客户端,客户端在随后每一次API请求或页面请求都会附带这个token,weroll会对它做验证,以维护用户会话的状态.<br>
-对于WebApp来说,会话Token将存放在客户端的cookie中. <br>
-对于APIServer来说,Token需要显式的返回给客户端(例如通过一个login的API响应Token给客户端),由客户端决定以何种方式存储它. 随后的每次API请求,客户端都需要将Token连同请求数据一起发送给服务器.<br>
+weroll内置了Session管理功能，使用 <b>weroll/model/Session</b> 对象可以对用户的登录会话进行管理和校验。<br>
+weroll的Session采用的是令牌校验的机制，即当用户登录成功之后，weroll生成一个16位的随机字符串作为令牌(以下我们称为token)，并将token传递给客户端，客户端在随后每一次API请求或页面请求都会附带这个token，weroll会对它做验证，以维护用户会话的状态。<br>
+对于WebApp来说，会话Token将存放在客户端的cookie中。 <br>
+对于APIServer来说，Token需要显式的返回给客户端(例如通过一个login的API响应Token给客户端)，由客户端决定以何种方式存储它。 随后的每次API请求，客户端都需要将Token连同请求数据一起发送给服务器。<br>
 <br>
-创建登录会话:<br>
+<br>
+启用Session:<br>
 
 ```js
-//code
+/* ./server/config/%ENV%/setting.js */
+module.exports ={
+    ...
+    session: {
+            /* user access session config. enable redis first */
+            onePointEnter:true,    //whether allow create session in multi client device
+            cookiePath:"/",      //cookie path for client browser
+            cacheExpireTime:3 * 60,     //session cache expire time, sec
+            tokenExpireTime:24 * 60 * 60,  //session token expire time, sec
+            cookieExpireTime:24 * 60 * 60 * 1000  //million sec
+    },
+    ...
+}
 ```
+
+<br>
+其中有3个重要的参数设置：<br>
+<table>
+    <thead>
+        <tr>
+            <td>Setting</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><b>session.onePointEnter</b></td>
+            <td>作用是是否允许同一个用户在多个客户端创建会话，如果为true则表示不允许，最近一次用户创建会话会覆盖之前创建的会话信息，使其他客户端失去访问权限。</td>
+        </tr>
+        <tr>
+            <td><b>session.cacheExpireTime</b></td>
+            <td>表示会话数据的缓存过期时间。在weroll中，会话数据会存储到redis中，防止node进程销毁导致用户会话丢失；同时再缓存到node进程内存中，以提高Token校验的性能，cacheExpireTime 参数即表示在内存中的过期时间，内存数据过期后，weroll会从redis中读取会话数据，并再次写进内存中。</td>
+        </tr>
+        <tr>
+            <td><b>session.tokenExpireTime</b></td>
+            <td>表示会话的过期时间。</td>
+        </tr>
+    </tbody>
+</table>
+使用Session必须要配置Redis连接，请参考 <a href="http://localhost:8900/guide/redis/" target="_blank">Guide - Redis</a>
+<br>
+<br>
+<h4>创建登录会话</h4>
+
+```js
+//假设你已经实现了用户登录验证，并得到了用户的id（或者_id，对于MongoDB来说）
+//user --> { _id:"1001", nickname:"Jay", type:100 }
+var Session = require("weroll/model/Session");
+
+//callback
+Session.getSharedInstance().save(user, function(err, sess) {
+    if (err) return console.error(err);
+    console.log(`session saved --> token: ${sess.token}     tokentimestamp: ${sess.tokentimestamp}`);
+});
+
+//Promise
+Session.getSharedInstance().save(user).then(function(sess) {
+    //session saved
+}).catch(function(err) {
+    //save error
+});
+
+//async & await
+async function() {
+    var sess = await Session.getSharedInstance().save(user);
+    console.log(`session saved --> token: ${sess.token}     tokentimestamp: ${sess.tokentimestamp}`);
+}
+```
+
+会话创建之后，开发者需要将 <b>token</b> 和 <b>tokentimestamp</b> 交给客户端。如果你使用WebApp开发网页项目，可以将令牌数据写到客户端请求的cookie里，例如：<br>
+
+```js
+//after user login
+//user --> { _id:"1001", nickname:"Jay", type:100 }
+
+var sess = await Session.getSharedInstance().save(user);
+
+var option = {
+    //设置cookie的path参数
+    path: Setting.session.cookiePath || "/",
+    //设置cookie的过期时间
+    expires: new Date(Date.now() + Setting.session.cookieExpireTime)
+};
+res.cookie("userid", sess.userid, option);
+res.cookie("token", sess.token, option);
+res.cookie("tokentimestamp", sess.tokentimestamp, option);
+//end this response
+```
+
+如果你使用APIServer，可以将令牌数据通过API响应的方式，返回给客户端，例如：<br>
+
+```js
+/* ./server/service/UserService.js */
+
+//define "user.login" API
+exports.login = async function(req, res, params) {
+    //check account and password ...
+    //if existed, then we get an user data
+    //user --> { _id:"1001", nickname:"Jay", type:100 }
+    //now we create session
+    var sess = await Session.getSharedInstance().save(user);
+    //response token and other data to client
+    res.sayOK(sess);
+}
+
+```
+
+<br>
+<h4>Token验证</h4>
+客户端获得token数据后，在随后的API请求或页面访问等操作中，需要把<b>userid</b>, <b>token</b>和<b>tokentimestamp</b>这3个数据提交给服务器进行验证。weroll并不关心客户端如何存储和管理token数据，你可以存放在cookie里，或者LocalStorage里，或者是移动设备的本地文件里。<br>
+<br>
+对于使用WebApp来说，如果创建会话后将token等数据写到了客户端cookie里，那么客户端并不需要做什么特别的处理，浏览器会自动在每次请求时附带cookie数据。weroll会自动从请求的cookie中获得token并进行校验。<br>
+<br>
+如果你使用APIServer，可以将token等数据连同API请求参数一起提交给服务器进行校验，示例代码如下：<br>
+
+```js
+/* client side */
+
+var params = {};
+//set api name
+params.method = "user.changeHead";
+//set api request data
+params.data = { "head":"123.jpg" };
+//submit token data
+params.auth = {
+    userid:"YOUR_USER_ID",
+    token:"YOUR_TOKEN",
+    tokentimestamp:"YOUR_TOKEN_TIMESTAMP"
+};
+
+$.ajax({
+    type: "post",
+    url: "http://localhost:3000/api",
+    headers: {
+        "Content-Type": "application/json; charset=UTF-8"
+    },
+    data: JSON.stringify(params),
+    success: function (data, status, xhr) {
+        if (data.code == 1) {
+            console.log('API ok: ', data);
+        } else {
+            console.error('API error: [' + data.code + '] - ' + data.msg);
+        }
+    }
+});
+```
+
+<br>
+<br>
+<h4>API和View Router的权限控制</h4>
+当你使用了 <b>weroll/model/Session</b> 管理用户会话之后，则可以给每一个API和View Router设定访问权限，例如：<br>
+
+```js
+/* ./server/service/UserService.js */
+exports.config = {
+    name: "user",
+    enabled: true,
+    security: {
+        //将needLogin参数设置为true，则表示该接口需要Session校验通过才能访问
+        //否则API将返回 { code:100, msg:"NO_PERMISSION" }
+        "hello":{ needLogin:true, checkParams:{ name:"string" }, optionalParams:{ gender:"int" } }
+    }
+};
+
+exports.hello = function(req, res, params, user) {
+    //user 对象则是 Session.save 时传递的数据
+    console.log("user id: ", user.id);  //or user.userid
+    console.log("user token: ", user.token);
+    //some codes ...
+}
+
+
+/* ./server/router/page.js */
+function renderSomePage(req, res, output, user) {
+    //user 对象则是 Session.save 时传递的数据
+    console.log("user id: ", user.id);  //or user.userid
+    //output({ ... });
+}
+
+exports.getRouterMap = function() {
+    return [
+        //将needLogin参数设置为true，则表示该页面需要Session校验通过才能访问，否则将自动跳到login页面
+        { url: "/some_page", view: "some_page", handle: renderSomePage, needLogin:true }
+    ];
+}
+```
+
+<br>
+<br>
+<h4>进阶技巧</h4>
+假设API或View Router的业务逻辑，经常需要使用用户的某些数据，而又不会经常发生变化的，例如昵称，性别，头像等。可以利用创建会话 Session.save() 将这些数据和token数据缓存在一起，这样可以大量减少数据库查询和相关代码。实例如下：<br>
+
+```js
+/* Session.save */
+//query from Database: userData --> { _id:"1001", nickname:"Jay", head:"123.jpg", arg1:{...}, type:100 }
+var Session = require("weroll/model/Session");
+
+var user = { userid:userData._id, type:userData.type };
+user.extra = JSON.stringify([ userData.nickname, userData.head, userData.arg1 ]);
+
+//callback
+Session.getSharedInstance().save(user);
+
+/////////////////////////////////////////////////////////////
+
+/* ./server/router/page.js */
+function renderSomePage(req, res, output, user) {
+    console.log("user id: ", user.id);  //or user.userid
+    //use extra to get more properties of user
+    console.log("user nickname: ", user.extra[0]);
+    console.log("user head: ", user.extra[1]);
+    console.log("user arg1: ", user.extra[2]);
+    //output({ ... });
+}
+```
+
+
 
