@@ -18,9 +18,9 @@ exports.init = function(setting) {
 }
 
 exports.remove = function(phone, type, callBack) {
-    Redis.del(REDIS_KEY + type + "_" + phone, function(redisRes, redisErr) {
+    Redis.del(REDIS_KEY + type + "_" + phone, function(redisErr, redisRes) {
         if (callBack) {
-            callBack(redisRes, redisErr);
+            callBack(redisErr, redisRes);
         } else {
             if (redisErr) console.error("remove validation code error ==> " + redisErr.toString());
         }
@@ -33,7 +33,7 @@ exports.use = function(phone, type, code, callBack) {
         return;
     }
 
-    Redis.get(REDIS_KEY + type + "_" + phone, function(redisRes, redisErr) {
+    Redis.get(REDIS_KEY + type + "_" + phone, function(redisErr, redisRes) {
         if (redisErr) {
             if (callBack) callBack(false, CODES.REDIS_ERROR, redisErr);
         } else {
@@ -53,7 +53,7 @@ exports.use = function(phone, type, code, callBack) {
 }
 
 exports.check = function(phone, type, code, callBack) {
-    Redis.get(REDIS_KEY + type + "_" + phone, function(redisRes, redisErr) {
+    Redis.get(REDIS_KEY + type + "_" + phone, function(redisErr, redisRes) {
         if (redisErr) {
             callBack(false, CODES.REDIS_ERROR, redisErr);
         } else {
@@ -75,7 +75,7 @@ exports.send = function(phone, type, callBack, len) {
     SMSUtil.sendMessage(phone, type, { "code":code }, function(flag, err) {
         if (flag) {
 
-            Redis.set(REDIS_KEY + type + "_" + phone, code, function(redisRes, redisErr) {
+            Redis.set(REDIS_KEY + type + "_" + phone, code, function(redisErr, redisRes) {
                 if (redisErr) {
                     if (callBack) callBack(null, CODES.REDIS_ERROR, redisErr);
                 } else {

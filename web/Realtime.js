@@ -192,7 +192,7 @@ exports.notifyToAll = function(event, data, cmd, from) {
 exports.getUserConnections = function(userID, callBack, renderFunc) {
     //traceLog("try to notify client --> " + userID);
     var key = formatRedisKey(userID);
-    Redis.do("ZREVRANGE", [ key, 0, 0 ], function(socketIDs, err) {
+    Redis.do("ZREVRANGE", [ key, 0, 0 ], function(err, socketIDs) {
         //traceLog("find connections --> ", socketIDs);
         if (socketIDs && socketIDs.length > 0) {
             var sockets = [];
@@ -214,7 +214,7 @@ exports.getUserConnections = function(userID, callBack, renderFunc) {
 exports.kick = function(userID) {
     //traceLog("try to notify client --> " + userid);
     var key = formatRedisKey(userID);
-    Redis.do("ZRANGE", [ key, 0, -1 ], function(socketIDs, err) {
+    Redis.do("ZRANGE", [ key, 0, -1 ], function(err, socketIDs) {
         if (socketIDs && socketIDs.length > 0) {
             socketIDs.forEach(function(socketID) {
                 var socket = server.sockets.connected[socketID];

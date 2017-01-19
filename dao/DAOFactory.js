@@ -2,7 +2,6 @@
  * Created by Jay on 2016/3/4.
  */
 var mongoose = require('mongoose');
-mongoose.Promise = global.Promise;
 
 var Schema = mongoose.Schema;
 

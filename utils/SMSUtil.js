@@ -7,14 +7,16 @@ var Utils = require("./Utils.js");
 var Redis = require("../model/Redis.js");
 var Request = require("min-request");
 
+var proxy;
 var config;
-var DEBUG = true;
+var PREFIX;
+var DEBUG = global.VARS.debug;
 var SIMULATION = false;
 
 exports.init = function(setting) {
     config = setting;
-    DEBUG = global.VARS.debug;
-    SIMULATION = global.VARS.debug;
+    PREFIX = setting.prefix || "sms_log_";
+    SIMULATION = config.simulate;
 }
 
 function logAfterSend(phone, redisObj) {
@@ -27,85 +29,122 @@ function logAfterSend(phone, redisObj) {
     if (redisObj) {
         times += redisObj.sendTimes;
     }
-    Redis.set("sms_log_" + phone, JSON.stringify({ date:date, lastSendTime:now, sendTimes:times }), function(redisRes, err) {
+    Redis.set(PREFIX + phone, JSON.stringify({ date:date, lastSendTime:now, sendTimes:times }), function(err) {
         if (err) {
             console.error("log sending sms error in redis error ==> " + err.toString());
         }
     }, 24 * 60 * 60);
 }
 
-function checkIsAllowToSend(phone, callBack) {
-    Redis.get("sms_log_" + phone, function(redisRes, err) {
-        if (err) {
-            callBack(null, err);
-        } else {
-            if (redisRes) {
-                try {
-                    var obj = JSON.parse(redisRes);
-                    if (Number(obj.lastSendTime) > 0) {
-                        var passedTime = Date.now() - Number(obj.lastSendTime);
-                        if (passedTime < config.limit.duration) {
-                            //too fast
-                            callBack(null, new Error("SMS_SEND_TOO_FAST"));
-                            return;
-                        }
-                    }
-                    var sendTimes = parseInt(obj.sendTimes);
-                    if (sendTimes < 0) sendTimes = 0;
-                    if (sendTimes > config.limit.maxPerDay) {
-                        //over max times in a day
-                        callBack(null, new Error("SMS_SEND_OVER_MAX_TIMES"));
-                        return;
-                    }
-                    callBack(obj);
-                } catch (exp) {
-                    callBack(null, exp);
-                }
-            } else {
-                callBack();
-            }
+function send(phone, msg) {
+    var option = typeof arguments[2] == "object" ? arguments[2] : {};
+    var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
+    if (typeof callBack != "function") callBack = null;
+
+    return new Promise(function(resolve, reject) {
+        var sendLog;
+        var q = [];
+        if (!option.enforce) {
+            q.push(function(cb) {
+                checkIsAllowToSend(phone).then(function(redisLog) {
+                    sendLog = redisLog;
+                    cb();
+                }).catch(function (err) {
+                    cb(err);
+                });
+            });
         }
+        if (SIMULATION) {
+            q.push(function(cb) {
+                setTimeout(function() {
+                    console.log("Simulate SMS send ----> ");
+                    console.log(msg);
+                    cb();
+                }, 20);
+            });
+        } else {
+            q.push(function(cb) {
+                proxy.send(phone, msg, option, function(err) {
+                    cb(err);
+                });
+            });
+        }
+        runAsQueue(q, function(err) {
+            if (!err && sendLog) logAfterSend(phone, sendLog);
+            callBack && callBack(err);
+            err ? reject(err) : resolve();
+        });
+
     });
 }
 
-function sendMessage(phone, templateKey, params, callBack, enforce) {
-    if (!String(phone).hasValue() || !Utils.cnCellPhoneCheck(phone)) {
-        var err = new Error("invalid cn cell phone");
-        if (callBack) callBack(false, err);
-        return;
-    }
+function sendWithTemplate(phone, templateKey, params) {
+    var option = typeof arguments[3] == "object" ? arguments[3] : {};
+    var callBack = typeof arguments[3] == "function" ? arguments[3] : arguments[4];
+    if (typeof callBack != "function") callBack = null;
 
-    if (enforce) {
-        send(phone, templateKey, params, callBack);
-    } else {
-        checkIsAllowToSend(phone, function(redisLog, err) {
+    return new Promise(function(resolve, reject) {
+        var tpl = TemplateLib.useTemplate("sms", templateKey, params);
+        var msg = tpl.content;
+        send(phone, msg, option, function(err) {
+            callBack && callBack(err);
+            err ? reject(err) : resolve();
+        });
+
+    });
+};
+
+function checkIsAllowToSend(phone, callBack) {
+    return new Promise(function(resolve, reject) {
+        Redis.get(PREFIX + phone, function(err, redisRes) {
             if (err) {
-                if (callBack) callBack(false, err);
+                callBack && callBack(err);
+                reject(err);
             } else {
-                if (SIMULATION) {
-                    setTimeout(function() {
-                        console.log("Simulate SMS send ----> ");
-                        var tpl = TemplateLib.useTemplate("sms", templateKey, params);
-                        console.log(tpl.content);
+                var obj;
+                try {
+                    obj = JSON.parse(redisRes);
+                } catch (exp) {
+                    obj = null;
+                }
+                obj = obj || {};
+                obj.lastSendTime = obj.lastSendTime || 0;
+                obj.sendTimes = obj.sendTimes || 0;
 
-                        logAfterSend(phone, redisLog);
-                        if (callBack) callBack(true);
-                    }, 50);
+                if (Number(obj.lastSendTime) > 0) {
+                    var passedTime = Date.now() - Number(obj.lastSendTime);
+                    if (passedTime < config.limit.duration) {
+                        //too fast
+                        err = new Error("SMS send too fast");
+                        callBack && callBack(err);
+                        reject(err);
+                        return;
+                    }
+                }
+                var sendTimes = parseInt(obj.sendTimes);
+                if (sendTimes < 0) sendTimes = 0;
+                //console.log(sendTimes, config.limit.maxPerDay);
+                if (sendTimes >= config.limit.maxPerDay) {
+                    //over max times in a day
+                    err = new Error("SMS send over max times");
+                    callBack && callBack(err);
+                    reject(err);
                     return;
                 }
-
-                send(phone, templateKey, params, function(flag, err) {
-                    if (flag) logAfterSend(phone, redisLog);
-                    if (callBack) callBack(flag, err);
-                });
+                callBack && callBack(null, obj);
+                resolve(obj);
             }
         });
-    }
+    });
 }
 
-function send(phone, templateKey, params, callBack) {
-    var tpl = TemplateLib.useTemplate("sms", templateKey, params);
-    var msg = tpl.content;
+
+proxy = {};
+proxy.send = function(phone, msg) {
+    var option = typeof arguments[2] == "object" ? arguments[2] : {};
+    var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
+    if (typeof callBack != "function") callBack = null;
+
     var url = config.api;
     url += "&KeyMD5=" + Utils.md5(config.secret).toUpperCase();
     url += "&smsMob=" + phone;
@@ -113,19 +152,26 @@ function send(phone, templateKey, params, callBack) {
 
     if (DEBUG) console.log("SMS ready to send ==> " + url);
 
-    Request(url, { method: "POST", body: {} },
-        function(err, res, body) {
-            if (DEBUG) console.log("sent a message to phone: " + phone + "    response: " + body);
-            if (err) {
-                if (callBack) callBack(false, err);
+    Request(url, { method: "POST", body: {} }, function(err, res, body) {
+        if (DEBUG) console.log("sent a SMS to phone: " + phone + "    response: " + body);
+        if (err) {
+            callBack(err);
+        } else {
+            if (Number(body) > 0) {
+                callBack();
             } else {
-                if (Number(body) > 0) {
-                    if (callBack) callBack(true);
-                } else {
-                    if (callBack) callBack(false, new Error("sms agent error ==> " + body));
-                }
+                callBack(new Error("SMS agent error. " + body));
             }
-        });
+        }
+    });
 }
 
-exports.sendMessage = sendMessage;
+//proxy -> { send:Function }
+function setProxy(newProxy) {
+    proxy = newProxy;
+}
+
+exports.send = send;
+exports.sendWithTemplate = sendWithTemplate;
+
+exports.setProxy = setProxy;

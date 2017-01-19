@@ -95,7 +95,7 @@ Session.prototype.check = function(id, token, callBack) {
             return;
         }
 
-        return Redis.getHashAll(key, function(sess, err) {
+        Redis.getHashAll(key, function(err, sess) {
             if (err) {
                 callBack && callBack(err);
                 reject(err);
