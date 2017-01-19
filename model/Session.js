@@ -47,16 +47,14 @@ Session.prototype.save = function(user, callBack) {
 
     var ins = this;
     return new Promise(function (resolve, reject) {
-        Redis.setHashMulti(key, sess, function(redisErr, redisRes) {
-            if (redisRes) {
-                Memory.save(key, sess, ins.config.cacheExpireTime, null);
-                callBack && callBack(null, sess);
-                resolve(sess);
-            } else {
-                callBack && callBack(redisErr);
-                reject(redisErr);
-            }
-        }, ins.config.tokenExpireTime);
+        Redis.setHashMulti(key, sess, ins.config.tokenExpireTime).then(function() {
+            Memory.save(key, sess, ins.config.cacheExpireTime, null);
+            callBack && callBack(null, sess);
+            resolve(sess);
+        }).catch(function(redisErr) {
+            callBack && callBack(redisErr);
+            reject(redisErr);
+        });
     });
 }
 

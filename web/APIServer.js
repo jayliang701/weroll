@@ -105,7 +105,7 @@ function APIServer() {
 
     this.server = server;
 
-    this.paramsChecker = require("../utils/ParamsChecker");
+    this.ParamsChecker = require("../utils/ParamsChecker");
 
     if (DEBUG) {
         //show api debug page
@@ -253,7 +253,7 @@ function APIServer() {
                 }
                 val = params[prop];
                 checkType = checkParams[prop];
-                result = instance.paramsChecker[checkType](val);
+                result = instance.ParamsChecker.check(checkType, val);
                 if (result.err) {
                     return Error.create(CODES.REQUEST_PARAMS_INVALID, "[" + prop + "] ==> " + result.err.toString());
                 }
@@ -266,7 +266,7 @@ function APIServer() {
                 if (!params.hasOwnProperty(prop) || params[prop] == "")  continue;
                 val = params[prop];
                 checkType = optionalParams[prop];
-                result = instance.paramsChecker[checkType](val, true);
+                result = instance.ParamsChecker.check(checkType, val, true);
                 if (result.err) {
                     return Error.create(CODES.REQUEST_PARAMS_INVALID, "[" + prop + "] ==> " + result.err.toString());
                 }

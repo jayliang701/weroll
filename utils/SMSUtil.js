@@ -54,20 +54,28 @@ function send(phone, msg) {
                 });
             });
         }
-        if (SIMULATION) {
-            q.push(function(cb) {
-                setTimeout(function() {
-                    console.log("Simulate SMS send ----> ");
-                    console.log(msg);
-                    cb();
-                }, 20);
-            });
-        } else {
+        if (option.hasOwnProperty("simulate") && option.simulate == false) {
             q.push(function(cb) {
                 proxy.send(phone, msg, option, function(err) {
                     cb(err);
                 });
             });
+        } else {
+            if (SIMULATION || option.simulate) {
+                q.push(function(cb) {
+                    setTimeout(function() {
+                        console.log("Simulate SMS send ----> ");
+                        console.log(msg);
+                        cb();
+                    }, 20);
+                });
+            } else {
+                q.push(function(cb) {
+                    proxy.send(phone, msg, option, function(err) {
+                        cb(err);
+                    });
+                });
+            }
         }
         runAsQueue(q, function(err) {
             if (!err && sendLog) logAfterSend(phone, sendLog);

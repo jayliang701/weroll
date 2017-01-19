@@ -102,4 +102,10 @@ checker["geo"] = function(val) {
     return { value:val };
 }
 
-module.exports = checker;
+exports.register = function(type, func) {
+    checker[type] = func.bind(checker);
+}
+
+exports.check = function(type, val, allowEmpty) {
+    return checker[type](val, allowEmpty);
+}

@@ -11,6 +11,9 @@ var Utils = require("./../utils/Utils");
 var CODES = require("./../ErrorCodes");
 var WRP = require("./WebRequestPreprocess");
 
+var ParamsChecker = require("../utils/ParamsChecker");
+var AuthorityChecker = require("../utils/AuthorityChecker");
+
 var EXPRESS  = require('express');
 var BODY_PARSER = require('body-parser');
 var METHOD_OVERRIDE = require('method-override');
@@ -128,7 +131,7 @@ App.post("/api", function (req, res) {
                 }
                 val = params[prop];
                 checkType = security.checkParams[prop];
-                result = App["checkRequestParam_" + checkType](val);
+                result = ParamsChecker.check(checkType, val);
                 if (result.err) {
                     res.sayError(CODES.REQUEST_PARAMS_INVALID, "[" + prop + "] ==> " + result.err.toString());
                     return;
@@ -142,7 +145,7 @@ App.post("/api", function (req, res) {
                 if (!params.hasOwnProperty(prop) || params[prop] == "")  continue;
                 val = params[prop];
                 checkType = security.optionalParams[prop];
-                result = App["checkRequestParam_" + checkType](val, true);
+                result = ParamsChecker.check(checkType, val, true);
                 if (result.err) {
                     res.sayError(CODES.REQUEST_PARAMS_INVALID, "[" + prop + "] ==> " + result.err.toString());
                     return;
@@ -158,8 +161,14 @@ App.post("/api", function (req, res) {
                     res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
                 }
             } else {
-                if (security.allowUserType && security.allowUserType != 1 && security.allowUserType.indexOf(user.type) < 0) {
-                    res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+                if (security.allow) {
+                    AuthorityChecker.check(user, security.allow, function(err, checkResult) {
+                        if (checkResult) {
+                            service[method](req, res, params, user);
+                        } else {
+                            res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+                        }
+                    });
                 } else {
                     service[method](req, res, params, user);
                 }
@@ -171,110 +180,6 @@ App.post("/api", function (req, res) {
         service[method](req, res, params);
     }
 });
-
-App.checkRequestParam_string = function(val, allowEmpty) {
-    if (allowEmpty && (!val || val == "")) return { value:val };
-    if (!val || val == "") {
-        return { value:null, err:new Error("empty string") };
-    }
-    return { value:val };
-}
-
-App.checkRequestParam_json = function(val) {
-    if (typeof val == "object") return { value:val };
-    try {
-        val = (val == "{}") ? {} : JSON.parse(val);
-    } catch (err) {
-        console.error('JSON.parse error ----> ' + val);
-        return { value:null, err:err };
-    }
-    return { value:val };
-}
-
-App.checkRequestParam_object = function(val) {
-    return App.checkRequestParam_json(val);
-}
-
-App.checkRequestParam_array = function(val) {
-    if (UTIL.isArray(val)) {
-        return { value:val };
-    } else {
-        if (typeof val != "object" && typeof val != "string") return { value:null, err:new Error("invalid Array") };
-
-        try {
-            val = (val == "[]") ? [] : JSON.parse(val);
-        } catch (err) {
-            console.error('JSON.parse error ----> ' + val);
-            return { value:null, err:err };
-        }
-        return { value:val };
-    }
-}
-
-App.checkRequestParam_email = function(val) {
-    if (!Utils.checkEmailFormat(val)) {
-        return { value:null, err:new Error("invalid email") };
-    }
-    return { value:val };
-}
-
-App.checkRequestParam_cellphone = function(val) {
-    if (!Utils.cnCellPhoneCheck(val)) {
-        return { value:null, err:new Error("invalid cellphone") };
-    }
-    return { value:val };
-}
-
-App.checkRequestParam_boolean = function(val) {
-    if (String(val) != "true" && String(val) != "false" && String(val) != "1" && String(val) != "0") {
-        return { value:null, err:new Error("invalid boolean") };
-    }
-    var flag = (String(val) == "true" || String(val) == "1") ? true : false;
-    return { value:flag };
-}
-
-App.checkRequestParam_number = function(val) {
-    if (isNaN(Number(val))) {
-        return { value:null, err:new Error("NaN number") };
-    }
-    return { value:Number(val) };
-}
-
-App.checkRequestParam_int = function(val) {
-    if (isNaN(Number(val))) {
-        return { value:null, err:new Error("NaN int") };
-    }
-    return { value:parseInt(val) };
-}
-
-App.checkRequestParam_geo = function(val) {
-    if (typeof val == "string") {
-        val = val.replace(/\s/g, '')
-        if (val.indexOf(",") > 0) {
-            val = val.split(",");
-        } else {
-            try {
-                val = JSON.parse(val);
-            } catch (err) {
-                return { value:null, err:new Error("invalid geo") };
-            }
-        }
-    }
-    val = [ Number(val[0]), Number(val[1]) ];
-    if (isNaN(Number(val[0])) || isNaN(Number(val[1]))) {
-        return { value:null, err:new Error("invalid geo") };
-    }
-    return { value:val };
-}
-
-App.checkRequestParam_qf = function(val) {
-    try {
-        val = Utils.convertQueryFields(val);
-    } catch (err) {
-        return { value:null, err:err };
-    }
-    return { value:val };
-}
 
 function redirectToLogin(req, res, loginPage) {
     loginPage = loginPage ? loginPage : "login";
@@ -290,15 +195,9 @@ App.COMMON_RESPONSE_DATA = {};
 function registerRouter(r) {
     App.all(r.url, function (req, res) {
 
-        App.handleUserSession(req, res, function(flag, user) {
+        App.checkPageSessionAndAuthority(r, req, res, function(flag, user) {
 
-            if (!flag && r.needLogin == true) {
-                redirectToLogin(req, res, r.loginPage);
-                return;
-            }
-
-            if (r.allowUserType && r.allowUserType != 1 && r.allowUserType.indexOf(user.type) < 0) {
-                //console.log('no permission ---> ' + r.view + '   ' + r.allowUserType);
+            if (!flag) {
                 redirectToLogin(req, res, r.loginPage);
                 return;
             }
@@ -338,10 +237,7 @@ function registerRouter(r) {
                 output(r.view, user);
             }
 
-        }, function(err) {
-            console.error("handle user session error ==> " + err.toString());
-            redirectToLogin(req, res, r.loginPage);
-        }, req.cookies, r);
+        });
     });
 }
 
@@ -360,7 +256,7 @@ App.handleUserSession = function(req, res, next, error, auth) {
         } else {
             Session.getSharedInstance().check(userid, token, function(err, sess) {
                 if (err) {
-                    error(err);
+                    error(err, user);
                 } else {
                     if (sess) {
                         //get user info from cache
@@ -394,38 +290,23 @@ App.handleUserSession = function(req, res, next, error, auth) {
     }
 }
 
-function inject(target) {
-    /*
-    target.taskPool = {};
-    target.addTask = function() {
-        var id = "*";
-        var task;
-        if (typeof arguments[0] == "string") {
-            id = arguments[0];
-            task = arguments[1];
-        } else {
-            task = arguments[0];
+App.checkPageSessionAndAuthority = function(router, req, res, callBack) {
+    App.handleUserSession(req, res, function(flag, user) {
+        if (!flag && router.needLogin == true) {
+            callBack && callBack(false, user);
+            return;
         }
-        var payload = this.taskPool[id];
-        if (!payload) {
-            payload = {
-                tasks:[],
-                queue:function(complete) {
-                    Utils.runQueueTask(this.tasks, complete);
-                }
-            };
-            this.taskPool[id] = payload;
-        };
-        this.taskPool[id].tasks.push(task);
-    }
-
-    target.queue = function(tasks, complete) {
-        Utils.runQueueTask(tasks, complete);
-    }
-    target.parallel = function(tasks, complete) {
-        Utils.runParallelTask(tasks, complete);
-    }
-     */
+        if (router.allow) {
+            AuthorityChecker.check(user, router.allow, function(err, checkResult) {
+                callBack && callBack(checkResult, user);
+            });
+        } else {
+            callBack && callBack(true, user);
+        }
+    }, function(err) {
+        console.error("handle user session error: " + err.toString());
+        callBack && callBack(false, user);
+    }, req.cookies, router);
 }
 
 exports.start = function(setting, callBack) {
@@ -466,7 +347,6 @@ exports.start = function(setting, callBack) {
         var router = global.requireModule(path + "/" + file);
         if (router.hasOwnProperty('getRouterMap') && router.getRouterMap) {
             var map = router.getRouterMap();
-            inject(router);
             map.forEach(function(r) {
                 //if (r.handle) inject(r.handle);
                 //if (r.postHandle) inject(r.postHandle);
@@ -478,7 +358,6 @@ exports.start = function(setting, callBack) {
     var doRegisterService = function(path, file) {
         path = path.replace(global.APP_ROOT, "").replace("\\" + serverPath + "\\", "").replace("/" + serverPath + "/", "").replace("\\", "/");
         var service = global.requireModule(path + "/" + file);
-        inject(service);
         if (service.config && service.config.name && service.config.enabled == true) {
             SERVICE_MAP[service.config.name] = service;
         }

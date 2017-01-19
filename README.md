@@ -31,7 +31,7 @@ weroll-cli 是一个帮助你快速生成weroll应用程序骨架的命令行工
 $ weroll init mini</code></pre>
 
 <b>Step 3:</b> 等待项目创建完成，进入项目目录，启动项目
-<pre class="highlight"><code style="width:100%;">$ node main.js</code></pre>
+<pre class="highlight"><code style="width:100%;">$ node main.js -debug</code></pre>
 你也可以使用其他node进程管理器，如pm2，forever等
 <br>
 <br>

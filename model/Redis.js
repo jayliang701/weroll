@@ -156,7 +156,6 @@ exports.remove = function(key, callBack) {
 exports.set = function(key, val) {
     var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
     if (typeof callBack != "function") callBack = null;
-
     var expired = typeof arguments[2] == "number" ? arguments[2] : arguments[3];
     if (typeof expired != "number") expired = null;
 
@@ -173,7 +172,12 @@ exports.set = function(key, val) {
     });
 }
 
-exports.setHash = function(key, field, val, callBack, expired) {
+exports.setHash = function(key, field, val) {
+    var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
+    if (typeof callBack != "function") callBack = null;
+    var expired = typeof arguments[2] == "number" ? arguments[2] : arguments[3];
+    if (typeof expired != "number") expired = null;
+
     return new Promise(function (resolve, reject) {
         client.hset(exports.join(key), field, val, function (err, res) {
             setExpire(key, expired);
@@ -187,7 +191,12 @@ exports.setHash = function(key, field, val, callBack, expired) {
     });
 }
 
-exports.setHashMulti = function(key, fieldAndVals, callBack, expired) {
+exports.setHashMulti = function(key, fieldAndVals) {
+    var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
+    if (typeof callBack != "function") callBack = null;
+    var expired = typeof arguments[2] == "number" ? arguments[2] : arguments[3];
+    if (typeof expired != "number") expired = null;
+
     return new Promise(function (resolve, reject) {
         client.hmset(exports.join(key), fieldAndVals, function (err, res) {
             setExpire(key, expired);

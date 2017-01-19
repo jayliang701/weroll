@@ -133,7 +133,11 @@ function find(dbName, target, filter, fields, sort, pagination, callBack) {
     });
 }
 
-function findOne(dbName, target, filter, fields, callBack) {
+function findOne(dbName, target, filter) {
+    var fields = typeof arguments[3] == "object" ? arguments[3] : {};
+    var callBack = typeof arguments[3] == "function" ? arguments[3] : arguments[4];
+    if (typeof callBack != "function") callBack = null;
+
     return new Promise(function (resolve, reject) {
         var db = getDBByName(dbName);
         if (!db) {
