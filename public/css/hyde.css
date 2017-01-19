@@ -287,3 +287,13 @@ table tbody td { padding:15px; }
 .sidebar div.copyright a {
     color: #268bd2;
 }
+
+ul.guide_index {
+    /*list-style: none;*/
+}
+
+ul.guide_index > li > a {
+    /*font-weight: bold;*/
+    color: #006cbc;
+    text-decoration: none;
+}

@@ -6,7 +6,12 @@ parent: guide
 ---
 
 <h3>HTTP</h3>
-<h4>关于WebApp和APIServer</h4>
+<ul class="guide_index">
+    <li><a href="#about">关于WebApp和APIServer</a></li>
+    <li><a href="#config">配置IP和端口</a></li>
+</ul>
+<br>
+<h4><a name="about">关于WebApp和APIServer</a></h4>
 weroll提供了WebApp和APIServer实现http服务。WebApp是对Express 4.X的封装，APIServer则是基于原生http库开发的极简http服务，仅支持API开发，不提供页面渲染。
 <br>
 以下是2者的详细区别说明
@@ -90,7 +95,8 @@ webApp.start(Setting, function(webApp) {
     //do something after server is setup
 });</code></pre>
 <br>
-<h4>配置IP和端口</h4>
+<br>
+<h4><a name="config">配置IP和端口</a></h4>
 HTTP服务的IP和端口在 ./server/config/%ENV%/setting.js 中进行配置：<br>
 <pre><code class="javascript">module.exports = {
     ...

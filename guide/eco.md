@@ -6,17 +6,30 @@ parent: guide
 ---
 
 <h3>Ecosystem</h3>
-<h4>简介</h4>
+<ul class="guide_index">
+    <li><a href="#what">什么是Ecosystem</a></li>
+    <li><a href="#start">开始使用Ecosystem</a></li>
+    <li><a href="#callapi">调用API</a></li>
+    <li><a href="#pubsub">订阅和推送消息</a></li>
+</ul>
+<br>
+<h4><a name="what">什么是Ecosystem</a></h4>
 weroll是面向微服务架构开发而生的。对于大中型的复杂应用或平台，通常由多个子系统组成，而开发者经常需要在子系统间进行数据交互。<br>
 <b>weroll/eco/Ecosystem</b> 对象用来实现在多个weroll应用之间进行数据交互的需求。<b>Ecosystem</b> 的工作机理是通过HTTP连接在weroll应用之间进行双向数据通讯，通过配置即将多个应用连接起来，构建成为一个生态系统，因此我们管它叫做 <b>Ecosystem</b>：<br>
-<div class="screenshot">![eco_1](/public/img/eco_1.jpg)</div>
+<div class="screenshot">
+<img src="/public/img/eco_1.jpg">
+<!-- ![eco_1](/public/img/eco_1.jpg) -->
+</div>
 <br>
 <br>
 <b>Ecosystem</b> 会建立一个新的HTTP服务器（使用一个新的端口），作为数据接收器；同时它使用 request 对象发出HTTP请求来实现数据推送。<b>Ecosystem</b> 可以像客户端一样直接调用另一个weroll应用的API，也可以像消息订阅一样侦听由其他weroll应用主动推送过来的消息数据。如下图所示：<br><br>
-<div class="screenshot">![eco_2](/public/img/eco_2.jpg)</div>
+<div class="screenshot">
+<img src="/public/img/eco_2.jpg">
+<!-- ![eco_2](/public/img/eco_2.jpg) -->
+</div>
 <br>
 
-<h4>开始使用Ecosystem</h4>
+<h4><a name="start">开始使用Ecosystem</a></h4>
 首先需要在setting.js中对Ecosystem进行配置：<br>
 
 ```js
@@ -95,7 +108,7 @@ app.run();
 初始化之后，Ecosystem 即成为一个全局对象，可以在任意代码中使用而不需要require导入。
 <br>
 <br>
-<h4>调用API</h4>
+<h4><a name="callapi">调用API</a></h4>
 使用 <b>Ecosystem.callAPI</b> 方法即可调用其他weroll应用的API，示例代码如下：<br>
 
 ```js
@@ -137,7 +150,7 @@ console.log("app3 response API: ", data2);
 
 <br>
 <br>
-<h4>订阅和推送消息</h4>
+<h4><a name="pubsub">订阅和推送消息</a></h4>
 使用 <b>Ecosystem.callAPI</b> 可以主动推送消息给其他weroll应用，或订阅其他weroll应用的推送。示例代码如下：
 
 ```js

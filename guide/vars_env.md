@@ -6,7 +6,12 @@ parent: guide
 ---
 
 <h3>Vars & Env</h3>
-<h4>global.VARS</h4>
+<ul class="guide_index">
+    <li><a href="#vars">global.VARS</a></li>
+    <li><a href="#env">切换运行环境</a></li>
+</ul>
+<br>
+<h4><a name="vars">global.VARS</a></h4>
 某些业务场景下，我们需要在启动node进程时传递一些变量，通常我们会这么做，如：
 
 ``````js
@@ -48,7 +53,7 @@ console.log("debug: ", global.VARS.debug);  //echo true
 weroll自带的<b>API调试工具</b>只有在 <b>global.VARS.debug == true</b> 的条件下才会开启，切换到开发环境时请<b>不要设置-debug</b>运行参数。
 
 <br>
-<h4>切换运行环境</h4>
+<h4><a name="env">切换运行环境</a></h4>
 weroll就是通过 <b>global.VARS.env</b> 变量来决定应用使用哪一个setting.js，默认环境是 <b>localdev</b>，开发者可根据实际需要创建其他的环境，例如：
 
 ```js

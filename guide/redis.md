@@ -6,7 +6,17 @@ parent: guide
 ---
 
 <h3>Redis</h3>
-<h4>连接配置</h4>
+<ul class="guide_index">
+    <li><a href="#config">连接配置</a></li>
+    <li><a href="#conn">Redis连接</a></li>
+    <li><a href="#cmd">Redis命令</a></li>
+    <li><a href="#tasks">Redis队列处理</a></li>
+    <li><a href="#key">Redis Key 规则</a></li>
+    <li><a href="#multi">创建多个Redis连接实例</a></li>
+    <li><a href="#pubsub">Pub/Sub 消息发布和订阅</a></li>
+</ul>
+<br>
+<h4><a name="config">连接配置</a></h4>
 在./server/config/%ENV%/setting.js里，model.redis节点配置了Redis的连接设置：
 
 ```js
@@ -42,7 +52,7 @@ weroll使用的是<a href="https://www.npmjs.com/package/redis" target="_blank">
 <pre><code class="html">Redis命令参考：<a href="http://redisdoc.com/" target="&#95;blank">http://redisdoc.com/</a></code></pre>
 <br>
 <br>
-<h4>Redis连接</h4>
+<h4><a name="conn">Redis连接</a></h4>
 在weroll应用中，通常使用Model对象进行MongoDB和Redis连接，示例代码如下：<br>
 
 ```js
@@ -68,7 +78,7 @@ app.run();
 
 <br>
 <br>
-<h4>Redis命令</h4>
+<h4><a name="cmd">Redis命令</a></h4>
 weroll对redis库进行了简单的封装了，你可以使用 weroll/model/Redis 对象进行操作：<br>
 
 ```js
@@ -100,7 +110,7 @@ async function() {
 }
 ```
 <br>
-<h4>Redis队列处理</h4>
+<h4><a name="tasks">Redis队列处理</a></h4>
 示例代码：<br>
 
 ```js
@@ -117,7 +127,7 @@ Redis.multi(tasks, function(err) {
 });
 ```
 <br>
-<h4>Redis Key 规则</h4>
+<h4><a name="key">Redis Key 规则</a></h4>
 在weroll应用中，redis的key通常是这样的规则：<br>
 
 ```js
@@ -173,7 +183,7 @@ Redis.multi(tasks, function(err) {
 ```
 <br>
 <br>
-<h4>创建多个Redis连接实例</h4>
+<h4><a name="multi">创建多个Redis连接实例</a></h4>
 使用 Redis.createClient 方法能够创建新的redis连接实例，返回<a href="https://www.npmjs.com/package/redis#rediscreateclient" target="_blank">RedisClient对象</a>，示例代码如下：<br>
 
 ```js
@@ -198,7 +208,7 @@ client4.on("connect", function() {
 ```
 <br>
 <br>
-<h4>Pub/Sub 消息发布和订阅</h4>
+<h4><a name="pubsub">Pub/Sub 消息发布和订阅</a></h4>
 Redis消息推送和消息接收由2个不同的reids连接实例来实现，详细请参考<a href="http://redisdoc.com/topic/pubsub.html" target="_blank">Redis命令参考-发布与订阅</a><br>
 示例代码如下：<br>
 

@@ -6,7 +6,14 @@ parent: guide
 ---
 
 <h3>MongoDB</h3>
-<h4>连接配置</h4>
+<ul class="guide_index">
+    <li><a href="#config">连接配置</a></li>
+    <li><a href="#native">使用MongoDB Native Driver</a></li>
+    <li><a href="#mongoose">使用Mongoose</a></li>
+    <li><a href="#multi">连接多个数据库</a></li>
+</ul>
+<br>
+<h4><a name="config">连接配置</a></h4>
 在./server/config/%ENV%/setting.js里，model.db节点配置了MongoDB的连接设置：
 <pre><code class="javascript">model: {
     //mongodb connection config
@@ -27,10 +34,10 @@ parent: guide
     //redis: { ... }
 }</code></pre>
 对于weroll应用来说，数据库并不是必须的，如果你不需要连接数据库，可以将model.db节点注释。<br>
-weroll同时支持<a href="" target="_blank">MongoDB官方的Node.js版连接库</a>，和<a href="" target="_blank">Mongoose</a>库。设置model.db.option.driver，可以选择使用官方driver或Mongoose，option的其他参数请参考<a href="http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/" target="_blank">MongoDB官方文档</a>。
+weroll同时支持<a href="http://mongodb.github.io/node-mongodb-native/2.2/" target="_blank">MongoDB官方的Node.js版连接库</a>，和<a href="http://mongoosejs.com/docs/guide.html" target="_blank">Mongoose</a>库。设置model.db.option.driver，可以选择使用官方driver或Mongoose，option的其他参数请参考<a href="http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/" target="_blank">MongoDB官方文档</a>。
 <br>
 <br>
-<h4>使用MongoDB Native Driver</h4>
+<h4><a name="native">使用MongoDB Native Driver</a></h4>
 配置setting.js中的model.db节点：
 <pre><code class="javascript">{
     model: {
@@ -73,7 +80,7 @@ async function() {
 详细使用方法，请<a href="https://github.com/jayliang701/weroll-kickstarter-test/blob/master/test/model/MongoDB.js" target="_blank">参考test里的代码</a>。
 <br>
 <br>
-<h4>使用Mongoose</h4>
+<h4><a name="mongoose">使用Mongoose</a></h4>
 配置setting.js中的model.db节点：
 <pre><code class="javascript">{
     model: {
@@ -136,7 +143,7 @@ module.exports = function() {
 定义Schema和官方用法一致，请参考<a href="http://mongoosejs.com/docs/guide.html" target="_blank">mongoose文档</a>。当DAOFactory.init完成之后，直接使用Student即可引用mongoose的Model对象。
 <br>
 <br>
-<h4>连接多个数据库</h4>
+<h4><a name="multi">连接多个数据库</a></h4>
 weroll应用允许同时连接多个MongoDB数据库，分为主连接（或者叫默认连接）和其他连接。mongoose库只允许用在主连接上，native driver可以则两者都可以使用。示例代码如下：<br>
 <pre><code class="javascript">var Model = require("weroll/model/Model");<br>
 //建立主连接
