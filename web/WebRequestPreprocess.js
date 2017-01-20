@@ -10,8 +10,29 @@ var options;
 
 var injects = { head:[], middle:[ preprocess ] };
 
+var generateAPIHeader = function() {
+    return { "Content-Type": "application/json" };
+};
+var encodeAPIData = function(data) {
+    return JSON.stringify(data);
+};
+var getAPIDataLength = function(data) {
+    return Buffer.byteLength(data, "utf8");
+};
+
 exports.config = function(opt) {
     options = opt;
+    if (options.compress) {
+        generateAPIHeader = function() {
+            return { "Content-Type": "application/octet-stream" };
+        };
+        encodeAPIData = function(data) {
+            return jsonZip(data);
+        };
+        getAPIDataLength = function(data) {
+            return data.length;
+        };
+    }
 }
 
 exports.inject = function(type, handler) {
@@ -43,6 +64,20 @@ function exec(q, success) {
     });
 }
 
+function outputData(data, headers) {
+    var responseHeader = generateAPIHeader();
+    if (headers) {
+        for (var key in headers) {
+            responseHeader[key] = headers[key];
+        }
+    }
+
+    data = encodeAPIData(data);
+    responseHeader['Content-Length'] = getAPIDataLength(data);
+    this.writeHead(200, responseHeader);
+    this.end(data);
+}
+
 function sayError() {
     var code, msg;
     if (arguments.length == 1 && arguments[0]) {
@@ -66,21 +101,13 @@ function sayError() {
         msg = msg.message || msg.toString();
     }
     console.error(this._req.body.method + " > ", "code: " + code, "msg: " + msg);
-    this.json({code:code, data:{}, msg:msg});
+    outputData.apply(this, [ {code:code, data:{}, msg:msg} ]);
 }
 
 function sayOK(data, headers) {
-    var responseHeader = { "Content-Type": "application/json" };
-    if (headers) {
-        for (var key in headers) {
-            responseHeader[key] = headers[key];
-        }
-    }
     if (arguments.length == 0) data = { flag:1 };
-    var resBody = JSON.stringify({code: CODES.OK, data:data, msg:"OK"});
-    responseHeader['Content-Length'] = Buffer.byteLength(resBody, "utf8");
-    this.writeHead(200, responseHeader);
-    this.end(resBody);
+    data = {code: CODES.OK, data:data, msg:"OK"};
+    outputData.apply(this, [ data, headers ])
 }
 
 function __callAPI(func, params, user, callBack) {

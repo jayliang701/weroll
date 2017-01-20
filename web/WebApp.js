@@ -324,7 +324,7 @@ exports.start = function(setting, callBack) {
         upload: setting.upload,
         "COOKIE_PATH": setting.session.cookiePath
     };
-    WRP.config({ site:setting.site });
+    WRP.config({ site:setting.site, compress:setting.compress ? setting.compress.api : false });
 
     Session.getSharedInstance().init(setting.session);
 

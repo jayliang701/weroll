@@ -6,6 +6,15 @@ var ICONV = require('iconv-lite');
 var Crypto = require("crypto");
 var BufferHelper = require('bufferhelper');
 var _ = require("underscore");
+var msgpack = require('msgpack5')();
+
+global.__defineGetter__('jsonZip', function() {
+    return msgpack.encode;
+});
+
+global.__defineGetter__('jsonUnzip', function() {
+    return msgpack.decode;
+});
 
 global.__defineGetter__('md5', function() {
     return function(str) {
