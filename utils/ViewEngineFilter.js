@@ -16,7 +16,7 @@ exports.init = function(options) {
     CDN_URL = options.cdnUrl;
     if (CDN_URL.charCodeAt(CDN_URL.length - 1) == "/") CDN_URL = CDN_URL.substr(0, CDN_URL.length - 1);
 
-    exports.addFilter('json', fetch);
+    exports.addFilter('json', json);
     exports.addFilter('fetch', fetch);
     exports.addFilter('string', string);
     exports.addFilter('gender', gender);
@@ -36,7 +36,14 @@ exports.addFilter = function(key, handler) {
     FILTER_MAP[key] = handler;
 }
 
-function json(val, express) {
+function json(val, defaultValue) {
+    if (!String(val).hasValue()) {
+        if (defaultValue) {
+            val = defaultValue;
+        } else {
+            return "null";
+        }
+    }
     return this.env.getFilter("safe")(JSON.stringify(val));
 }
 
