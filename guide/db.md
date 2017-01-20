@@ -87,21 +87,29 @@ async function() {
     }
 }</code></pre>
 然后在main.js入口文件中初始化Model对象和DAOFactory对象：
-<pre><code class="javascript">//./main.js<br>
-var Setting = global.SETTING;<br>
+
+```js
+/* ./main.js */
+
+var Setting = global.SETTING;
+var Model = require("weroll/model/Model");
+
 app.addTask(function(cb) {
-    var Model = require("weroll/model/Model");
-    Model.init(Setting.model,
-        function(err) {
-            if (err)  return cb(err);
-            var DAOFactory = require("weroll/dao/DAOFactory");
-            DAOFactory.init(Model.getDBByName());
-            //可以指定DAO文件的存放目录，默认是 server/dao 目录
-            //var folder = require("path").join(global.APP&#95;ROOT, "server/dao");
-            //DAOFactory.init(Model.getDBByName(), folder);
-            cb();
-        });
-});</code></pre>
+    Model.init(Setting.model, function(err) {
+        cb(err);
+    });
+});
+app.addTask(function(cb) {
+    var DAOFactory = require("weroll/dao/DAOFactory");
+    DAOFactory.init(Model.getDBByName(), function(err) {
+        cb(err);
+    });
+    //可以指定DAO文件的存放目录，默认是 ./server/dao 目录
+    //var folder = require("path").join(global.APP_ROOT, "server/dao");
+    //DAOFactory.init(Model.getDBByName(), { folder:folder }, callback);
+});
+```
+
 DAOFactory对象会遍历dao目录和其子目录，将文件名为 XXXSchema.js 的文件作为Schema注册到mongoose实例里。比如UserSchema.js文件，初始化之后，你就可以在应用程序的任何一个地方使用User（User是mongoose里的Model对象）来操作数据，不需要require来导入。<br>
 在weroll中使用mongoose的Model来操作数据库和官方一样，没有什么区别，以下是一段查询的示例代码：<br>
 <pre><code class="javascript">//findOne with callback
