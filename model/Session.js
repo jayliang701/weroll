@@ -41,13 +41,17 @@ Session.prototype.save = function(user, callBack) {
     sess.token = user.token || Utils.randomString(16);
     sess.tokentimestamp = tokentimestamp;
     sess.type = user.type;
-    if (user.extra) sess.extra = user.extra;
+    var extra = user.extra;
+    if (user.extra) {
+        sess.extra = (typeof user.extra == "string") ? user.extra : JSON.stringify(user.extra);
+    }
 
     var key = this.formatKey(sess.userid, sess.token);
 
     var ins = this;
     return new Promise(function (resolve, reject) {
         Redis.setHashMulti(key, sess, ins.config.tokenExpireTime).then(function() {
+            sess.extra = extra;
             Memory.save(key, sess, ins.config.cacheExpireTime, null);
             if (callBack) return callBack(null, sess);
             resolve(sess);
@@ -100,6 +104,13 @@ Session.prototype.check = function(id, token, callBack) {
             } else {
                 if (sess) {
                     if (ins.checkSess(id, token, sess)) {
+                        if (sess.extra && typeof sess.extra == "string") {
+                            try {
+                                sess.extra = JSON.parse(sess.extra);
+                            } catch (exp) {
+                                console.error("JSON.parse session's extra fail --> " + exp.toString());
+                            }
+                        }
                         if (callBack) return callBack(null, sess);
                         resolve(sess);
                     } else {
