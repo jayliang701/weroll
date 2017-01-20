@@ -562,14 +562,14 @@ exports.getCostTime = function(id) {
 
 //验证邮箱地址
 exports.checkEmailFormat = function(str){
-    if (!str || str == "" || str == "undefined" || str == "null") return false;
+    if (!str || typeof str != 'string') return false;
     var re = /^(\w-*\.*)+@(\w-?)+(\.\w{2,})+$/;
     return re.test(str);
 }
 
 //验证电话号码，手机或座机
 exports.checkPhoneFormat = function(str){
-    if (!str || str == "" || str == "undefined" || str == "null") return false;
+    if (!str || typeof str != 'string') return false;
     var re = /^1\d{10}$/;
     if (!re.test(str)) {
         re = /^0\d{2,3}-?\d{7,8}$/;
@@ -581,6 +581,7 @@ exports.checkPhoneFormat = function(str){
 
 //验证大陆手机号码
 exports.cnCellPhoneCheck = function(str){
+    if (!str || typeof str != 'string') return false;
     var re = /^1\d{10}$/;
     if(str.indexOf(",") != -1){
         var p = str.split(",");
@@ -599,7 +600,7 @@ exports.cnCellPhoneCheck = function(str){
 ///////////////////////////////////////////////////////////////////////////
 
 exports.idCardCheck = function (arrIdCard){
-    if (typeof arrIdCard != 'string') return false;
+    if (!arrIdCard || typeof arrIdCard != 'string') return false;
     var tag = false;
     var sigma = 0;
     var a = new Array(7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 );
@@ -620,7 +621,7 @@ exports.idCardCheck = function (arrIdCard){
 }
 
 exports.urlCheck = function (str){
-    if (typeof str != 'string') return false;
+    if (!str || typeof str != 'string') return false;
 
     var reg = new RegExp("(http://){0,1}([0-9a-zA-z].+\.).+[a-zA-z].+/{0,1}");
     var isurl = reg.test(str);

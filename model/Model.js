@@ -131,19 +131,23 @@ exports.cacheRead = function(key) {
         var c = CACHE_POOL[1].read(originalKey);
         if (c) {
             return new Promise(function (resolve) {
-                callBack && callBack(c);
+                if (callBack) return callBack(c);
                 resolve(c);
             });
         } else {
             //console.log("read from deeper cache...");
-            return CACHE_POOL[2].read(originalKey, function(err, c2) {
-                if (err) {
-                    callBack && callBack(err);
-                } else {
-                    //console.log("update level 1 cache...");
-                    CACHE_POOL[1].save(originalKey, c2);
-                    callBack && callBack(c2);
-                }
+            return new Promise(function(resolve, reject) {
+                CACHE_POOL[2].read(originalKey, function(err, c2) {
+                    if (err) {
+                        if (callBack) return callBack(err);
+                        reject(err);
+                    } else {
+                        //console.log("update level 1 cache...");
+                        CACHE_POOL[1].save(originalKey, c2);
+                        if (callBack) return callBack(c2);
+                        resolve(c2);
+                    }
+                });
             });
         }
     } else {
@@ -275,7 +279,7 @@ exports.openDB = function(config, asDefault, callBack) {
                         exports.DB[config.name] = ins;
                     }
                 }
-                callBack(err, db);
+                if (callBack) return callBack(err, db);
                 if (err) {
                     reject(err);
                 } else {

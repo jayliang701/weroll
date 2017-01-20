@@ -44,11 +44,11 @@ var callAPI = function(method, params) {
         var service = SERVICE_MAP[method[0]];
         if (!service || !service.hasOwnProperty(method[1])) {
             var err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
         req.__callAPI(service[method[1]], params, user, function(err, data) {
-            callBack && callBack(err, data);
+            if (callBack) return callBack(err, data);
             if (err) reject(err);
             else resolve(data);
         });
@@ -293,7 +293,7 @@ App.handleUserSession = function(req, res, next, error, auth) {
 App.checkPageSessionAndAuthority = function(router, req, res, callBack) {
     App.handleUserSession(req, res, function(flag, user) {
         if (!flag && router.needLogin == true) {
-            callBack && callBack(false, user);
+            if (callBack) return callBack(false, user);
             return;
         }
         if (router.allow) {

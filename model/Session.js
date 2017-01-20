@@ -49,10 +49,10 @@ Session.prototype.save = function(user, callBack) {
     return new Promise(function (resolve, reject) {
         Redis.setHashMulti(key, sess, ins.config.tokenExpireTime).then(function() {
             Memory.save(key, sess, ins.config.cacheExpireTime, null);
-            callBack && callBack(null, sess);
+            if (callBack) return callBack(null, sess);
             resolve(sess);
         }).catch(function(redisErr) {
-            callBack && callBack(redisErr);
+            if (callBack) return callBack(redisErr);
             reject(redisErr);
         });
     });
@@ -64,7 +64,7 @@ Session.prototype.remove = function(user, callBack) {
     Memory.remove(key);
     return new Promise(function (resolve, reject) {
         Redis.del(key, function(err) {
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             err ? reject(err) : resolve();
         });
     });
@@ -84,10 +84,10 @@ Session.prototype.check = function(id, token, callBack) {
         var cache = Memory.read(key);
         if (cache) {
             if (ins.checkSess(id, token, cache)) {
-                callBack && callBack(null, cache);
+                if (callBack) return callBack(null, cache);
                 resolve(cache);
             } else {
-                callBack && callBack(null, null);
+                if (callBack) return callBack(null, null);
                 resolve();
             }
             return;
@@ -95,19 +95,19 @@ Session.prototype.check = function(id, token, callBack) {
 
         Redis.getHashAll(key, function(err, sess) {
             if (err) {
-                callBack && callBack(err);
+                if (callBack) return callBack(err);
                 reject(err);
             } else {
                 if (sess) {
                     if (ins.checkSess(id, token, sess)) {
-                        callBack && callBack(null, sess);
+                        if (callBack) return callBack(null, sess);
                         resolve(sess);
                     } else {
-                        callBack && callBack(null, null);
+                        if (callBack) return callBack(null, null);
                         resolve();
                     }
                 } else {
-                    callBack && callBack(null, null);
+                    if (callBack) return callBack(null, null);
                     resolve();
                 }
             }

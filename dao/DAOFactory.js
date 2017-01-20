@@ -36,10 +36,16 @@ var checkFolder = function(path, handler) {
 
 exports.Schema = Schema;
 
-exports.init = function(owner, folder) {
+exports.init = function(owner) {
+    var option = typeof arguments[1] == "function" ? {} : arguments[1];
+    var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
+    if (typeof callBack != "function") callBack = null;
+
+    var q = [];
+    var incrIDHash;
 
     //init routers
-    checkFolder(folder || PATH.join(global.APP_ROOT, "server/dao"), doRegisterSchema);
+    checkFolder(option.folder || PATH.join(global.APP_ROOT, "server/dao"), doRegisterSchema);
 
     for (var key in defs) {
         if (defs[key].isMongooseSchema) {
@@ -61,7 +67,31 @@ exports.init = function(owner, folder) {
                 global.__defineGetter__(def.name, function() {
                     return model;
                 });
+
+                if (def.hasOwnProperty("firstUUID") && def.firstUUID > 0) {
+                    if (!incrIDHash) {
+                        q.push(function(cb) {
+                            Redis.getHashAll("incremental_id", function(err, hash) {
+                                incrIDHash = hash || {};
+                                cb(err);
+                            });
+                        });
+                    }
+                    q.push(function(cb) {
+                        //return cb();
+                        var current = Number(incrIDHash[def.name]) || 0;
+                        if (current >= def.firstUUID) return cb();
+                        var redisTasks = [];
+                        redisTasks.push([ "HDEL", Redis.join("incremental_id"), def.name ]);
+                        redisTasks.push([ "HINCRBY", Redis.join("incremental_id"), def.name, Number(def.firstUUID) ]);
+                        Redis.multi(redisTasks, function(err) {
+                            if (err) console.error(`init *${def.name}* incremental id error: ${err}`);
+                            cb(err);
+                        });
+                    });
+                }
             });
+
         } else {
             (function(prop) {
                 var dao = defs[prop].ref;
@@ -71,23 +101,41 @@ exports.init = function(owner, folder) {
             })(key);
         }
     }
+
+    runAsQueue(q, function(err) {
+        callBack && callBack(err);
+    });
 }
 
 function inject(schema) {
     schema.static("getByID", function(id, fields, callBack) {
-        return this.findOne({ _id:id }, fields, callBack);
+        var ins = this;
+        return new Promise(function(resolve, reject) {
+            ins.findOne({ _id:id }, fields, function (err, doc) {
+                if (callBack) return callBack(err, doc);
+                err ? reject(err) : resolve(doc);
+            });
+        });
     });
 
     schema.static("updateByID", function(id, ups, callBack) {
-        return this.update({ _id:id }, ups, callBack);
+        var ins = this;
+        return new Promise(function(resolve, reject) {
+            ins.update({ _id:id }, ups, function (err, result) {
+                if (callBack) return callBack(err, result);
+                err ? reject(err) : resolve(result);
+            });
+        });
     });
 
     schema.static("exist", function(filter, callBack) {
-        return this.findOne(filter, "_id", function(err, obj) {
-            if (callBack) {
-                if (err) callBack(err);
-                else callBack(null, obj ? true : false);
-            }
+        var ins = this;
+        return new Promise(function(resolve, reject) {
+            ins.findOne(filter, "_id", function(err, obj) {
+                var exist = obj ? true : false;
+                if (callBack) return callBack(err, exist);
+                err ? reject(err) : resolve(exist);
+            });
         });
     });
 
@@ -104,7 +152,7 @@ function inject(schema) {
                         if (!err && doc.length >= PAGE_SIZE) {
                             loop(pageIndex + 1);
                         } else {
-                            callBack && callBack(err, data);
+                            if (callBack) return callBack(err, data);
                             err ? reject(err) : resolve(data);
                         }
                     });
@@ -186,10 +234,10 @@ function inject(schema) {
             runAsQueue(q, function(err, result) {
                 if (err) {
                     err = err.code ? err : Error.create(CODES.DB_ERROR, err);
-                    callBack && callBack(err);
+                    if (callBack) return callBack(err);
                     reject(err);
                 } else {
-                    callBack && callBack(null, result);
+                    if (callBack) return callBack(null, result);
                     resolve(result);
                 }
             });

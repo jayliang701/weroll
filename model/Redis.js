@@ -94,7 +94,7 @@ exports.save = function(key, val) {
             } else {
                 Dispatcher.emit("error", tempKey, originalKey, redisErr);
             }
-            callBack && callBack(redisErr, redisRes);
+            if (callBack) return callBack(redisErr, redisRes);
             if (redisErr) {
                 reject(redisErr);
             } else {
@@ -121,7 +121,7 @@ exports.read = function(key, callBack) {
                     res = JSON.parse(res);
                 } catch (exp) { }
             }
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -143,7 +143,7 @@ exports.remove = function(key, callBack) {
         }
         //console.log('remove ---> ' + tempKey);
         client.del(redisKey, function(err) {
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             if (err) {
                 reject(err);
             } else {
@@ -162,7 +162,7 @@ exports.set = function(key, val) {
     return new Promise(function (resolve, reject) {
         client.set(exports.join(key), val, function (err, res) {
             setExpire(key, expired);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             if (err) {
                 reject(err);
             } else {
@@ -181,7 +181,7 @@ exports.setHash = function(key, field, val) {
     return new Promise(function (resolve, reject) {
         client.hset(exports.join(key), field, val, function (err, res) {
             setExpire(key, expired);
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -200,7 +200,7 @@ exports.setHashMulti = function(key, fieldAndVals) {
     return new Promise(function (resolve, reject) {
         client.hmset(exports.join(key), fieldAndVals, function (err, res) {
             setExpire(key, expired);
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -215,7 +215,7 @@ exports.pushIntoList = function(key, value, callBack) {
         var args = [ exports.join(key) ];
         args = args.concat(value);
         args.push(function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -229,7 +229,7 @@ exports.pushIntoList = function(key, value, callBack) {
 exports.getFromList = function(key, fromIndex, toIndex, callBack) {
     return new Promise(function (resolve, reject) {
         client.lrange(exports.join(key), fromIndex, toIndex, function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -246,7 +246,7 @@ exports.getWholeList = function(key, callBack) {
 exports.setToList = function(key, index, value, callBack) {
     return new Promise(function (resolve, reject) {
         client.lset(exports.join(key), index, value, function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -259,7 +259,7 @@ exports.setToList = function(key, index, value, callBack) {
 exports.get = function(key, callBack) {
     return new Promise(function (resolve, reject) {
         client.get(exports.join(key), function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -272,7 +272,7 @@ exports.get = function(key, callBack) {
 exports.getHash = function(key, field, callBack) {
     return new Promise(function (resolve, reject) {
         client.hget(exports.join(key), field, function (err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -285,7 +285,7 @@ exports.getHash = function(key, field, callBack) {
 exports.getHashMulti = function(key, field, callBack) {
     return new Promise(function (resolve, reject) {
         client.hmget(exports.join(key), field, function (err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -298,7 +298,7 @@ exports.getHashMulti = function(key, field, callBack) {
 exports.getHashAll = function(key, callBack) {
     return new Promise(function (resolve, reject) {
         client.hgetall(exports.join(key), function (err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -311,7 +311,7 @@ exports.getHashAll = function(key, callBack) {
 exports.getHashKeys = function(key, callBack) {
     return new Promise(function (resolve, reject) {
         client.hkeys(exports.join(key), function (err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -324,7 +324,7 @@ exports.getHashKeys = function(key, callBack) {
 exports.delHashField = function(key, fields, callBack) {
     return new Promise(function (resolve, reject) {
         client.hdel.apply(client, [ exports.join(key) ].concat(fields).concat(function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -338,12 +338,12 @@ exports.findKeysAndDel = function(keyword, callBack) {
     return new Promise(function (resolve, reject) {
         client.keys(keyword, function(err, keys) {
             if (err) {
-                callBack && callBack(err);
+                if (callBack) return callBack(err);
                 return reject(err);
             } else {
                 keys = keys || [];
                 if (keys.length <= 0) {
-                    callBack && callBack(null, 0);
+                    if (callBack) return callBack(null, 0);
                     return resolve(0);
                 }
 
@@ -352,7 +352,7 @@ exports.findKeysAndDel = function(keyword, callBack) {
                     tasks.push([ "del", key ]);
                 });
                 exports.multi(tasks, function(err) {
-                    callBack && callBack(err, tasks.length);
+                    if (callBack) return callBack(err, tasks.length);
                     if (err) {
                         reject(err);
                     } else {
@@ -367,7 +367,7 @@ exports.findKeysAndDel = function(keyword, callBack) {
 exports.del = function(key, callBack) {
     return new Promise(function (resolve, reject) {
         client.del(exports.join(key), function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -380,7 +380,7 @@ exports.del = function(key, callBack) {
 exports.multi = function(tasks, callBack) {
     return new Promise(function (resolve, reject) {
         client.multi(tasks).exec(function (err) {
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             if (err) {
                 reject(err);
             } else {
@@ -397,7 +397,7 @@ exports.multiTask = function() {
 exports.do = function (cmd, args, callBack) {
     return new Promise(function (resolve, reject) {
         var done = function(err, res) {
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
             } else {
@@ -411,7 +411,7 @@ exports.do = function (cmd, args, callBack) {
 exports.subscribe = function (channel, callBack) {
     return new Promise(function (resolve, reject) {
         client.subscribe(channel, function(err) {
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             err ? reject(err) : resolve();
         });
     });
@@ -420,7 +420,7 @@ exports.subscribe = function (channel, callBack) {
 exports.publish = function (channel, message, callBack) {
     return new Promise(function (resolve, reject) {
         client.publish(channel, message, function(err) {
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             err ? reject(err) : resolve();
         });
     });
@@ -465,7 +465,7 @@ exports.checkLock = function(lockKey, callBack, checkDelay, timeout, currentRetr
         exports.do("SETNX", [ fullLockKey, Date.now() ], function(err, res) {
             if (err) {
                 console.error(`check lock *${lockKey}* error ---> ${err}`);
-                callBack && callBack(err);
+                if (callBack) return callBack(err);
                 return reject(err);
             } else {
                 var isLocked = res == 0;
@@ -473,7 +473,7 @@ exports.checkLock = function(lockKey, callBack, checkDelay, timeout, currentRetr
                     DEBUG && console.log(`found lock, wait ---> lock key: ${lockKey}`);
                     if (currentRetry >= maxRetry) {
                         err = new Error("access locked");
-                        callBack && callBack(err);
+                        if (callBack) return callBack(err);
                         return reject(err);
                     }
                     currentRetry ++;
@@ -484,11 +484,11 @@ exports.checkLock = function(lockKey, callBack, checkDelay, timeout, currentRetr
                 } else {
                     if (setting && setting.maxLockTime) {
                         client.expire(fullLockKey, setting.maxLockTime, function() {
-                            callBack && callBack();
+                            if (callBack) return callBack();
                             return resolve();
                         });
                     } else {
-                        callBack && callBack();
+                        if (callBack) return callBack();
                         return resolve();
                     }
                 }
@@ -502,7 +502,7 @@ exports.releaseLock = function(lockKey, callBack) {
     return new Promise(function (resolve, reject) {
         exports.do("DEL", [ exports.join(lockKey + "_redisLock") ], function(err, res) {
             if (err) console.error(`release lock *${lockKey}* error ---> ${err}`);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             if (err) {
                 reject(err);
             } else {
@@ -515,7 +515,7 @@ exports.releaseLock = function(lockKey, callBack) {
 exports.releaseAllLocks = function(callBack) {
     return new Promise(function (resolve, reject) {
         exports.findKeysAndDel("*_redisLock", function(err, num) {
-            callBack && callBack(err, num);
+            if (callBack) return callBack(err, num);
             if (err) {
                 reject(err);
             } else {

@@ -79,7 +79,7 @@ function send(phone, msg) {
         }
         runAsQueue(q, function(err) {
             if (!err && sendLog) logAfterSend(phone, sendLog);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             err ? reject(err) : resolve();
         });
 
@@ -95,7 +95,7 @@ function sendWithTemplate(phone, templateKey, params) {
         var tpl = TemplateLib.useTemplate("sms", templateKey, params);
         var msg = tpl.content;
         send(phone, msg, option, function(err) {
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             err ? reject(err) : resolve();
         });
 
@@ -106,7 +106,7 @@ function checkIsAllowToSend(phone, callBack) {
     return new Promise(function(resolve, reject) {
         Redis.get(PREFIX + phone, function(err, redisRes) {
             if (err) {
-                callBack && callBack(err);
+                if (callBack) return callBack(err);
                 reject(err);
             } else {
                 var obj;
@@ -124,7 +124,7 @@ function checkIsAllowToSend(phone, callBack) {
                     if (passedTime < config.limit.duration) {
                         //too fast
                         err = new Error("SMS send too fast");
-                        callBack && callBack(err);
+                        if (callBack) return callBack(err);
                         reject(err);
                         return;
                     }
@@ -135,11 +135,11 @@ function checkIsAllowToSend(phone, callBack) {
                 if (sendTimes >= config.limit.maxPerDay) {
                     //over max times in a day
                     err = new Error("SMS send over max times");
-                    callBack && callBack(err);
+                    if (callBack) return callBack(err);
                     reject(err);
                     return;
                 }
-                callBack && callBack(null, obj);
+                if (callBack) return callBack(null, obj);
                 resolve(obj);
             }
         });

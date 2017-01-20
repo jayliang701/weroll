@@ -37,9 +37,7 @@ function open(host, port, name, option, callBack, asDefault) {
             console.log("Database connection[" + name + "] init completed.   [default:" + asDefault + ", driver: " + driver + ", poolSize: " + poolSize + "]");
         }
 
-        if (callBack) {
-            callBack(err, newDB);
-        }
+        if (callBack) callBack(err, newDB);
     }
 
     if (option && option.driver == "mongoose") {
@@ -69,12 +67,12 @@ function insert(dbName, target, data, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
         db.collection(target).insertOne(data, function(err, res){
             if (err) console.error(err);
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             err ? reject(err) : resolve(res);
         });
     });
@@ -85,12 +83,12 @@ function insertList(dbName, target, list, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
         db.collection(target).insert(list, function(err, res){
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             err ? reject(err) : resolve(res);
         });
     });
@@ -101,7 +99,7 @@ function find(dbName, target, filter, fields, sort, pagination, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -119,13 +117,13 @@ function find(dbName, target, filter, fields, sort, pagination, callBack) {
         args.push(function(err1, cursor) {
             if (err1) {
                 console.error(target + ".find failed ==> ", err1);
-                callBack && callBack(err1);
+                if (callBack) return callBack(err1);
                 return reject(err1);
             }
             cursor.toArray(function(err2, items) {
                 if (err2) console.error(target + ".find.toArray failed ==> ", err2);
                 //console.log(target + ".find complete ==> items.length: " + (items ? items.length : 0));
-                callBack && callBack(err2, items);
+                if (callBack) return callBack(err2, items);
                 err2 ? reject(err2) : resolve(items);
             });
         });
@@ -142,7 +140,7 @@ function findOne(dbName, target, filter) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -152,7 +150,7 @@ function findOne(dbName, target, filter) {
         if (fields) args.push(fields);
         args.push(function(err, obj) {
             if (err) console.error(target + ".findOne failed ==> ", err);
-            callBack && callBack(err, obj);
+            if (callBack) return callBack(err, obj);
             err ? reject(err) : resolve(obj);
         });
         targetCol.findOne.apply(targetCol, args);
@@ -164,7 +162,7 @@ function findPage(dbName, target, filter, fields, sort, pagination, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -177,7 +175,7 @@ function findPage(dbName, target, filter, fields, sort, pagination, callBack) {
         cursor.count(function(err, totalNum) {
             if (err) {
                 console.error(target + ".count failed ==> ", err);
-                callBack && callBack(err);
+                if (callBack) return callBack(err);
                 return reject(err);
             } else {
                 if (sort) {
@@ -188,7 +186,7 @@ function findPage(dbName, target, filter, fields, sort, pagination, callBack) {
                 cursor.skip(parseInt(pageIndex) * parseInt(pageSize)).limit(parseInt(pageSize)).toArray(function(err, items) {
                     if (err) console.error(target + ".find.sort.skip.limit.toArray failed ==> ", err);
                     var result = items ? { list:items, totalNum:totalNum, pageIndex:pageIndex, pageSize:pageSize } : null;
-                    callBack && callBack(err, result);
+                    if (callBack) return callBack(err, result);
                     err ? reject(err) : resolve(result);
                 });
             }
@@ -201,14 +199,14 @@ function count(dbName, target, filter, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
         var targetCol = db.collection(target);
         targetCol.count(filter ? filter : {}, function(err, count) {
             if (err) console.error(target + ".count failed ==> ", err);
-            callBack && callBack(err, count);
+            if (callBack) return callBack(err, count);
             err ? reject(err) : resolve(count);
         });
     });
@@ -230,14 +228,14 @@ function aggregate(dbName, target, operation, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
         var targetCol = db.collection(target);
         targetCol.aggregate(operation, function(err, res) {
             if (err) console.error(target + ".aggregate failed ==> err: " + err + "      args: ", operation ? JSON.stringify(operation) : "null");
-            callBack && callBack(err, res);
+            if (callBack) return callBack(err, res);
             err ? reject(err) : resolve(res);
         });
     });
@@ -275,7 +273,7 @@ function update(dbName, target, filter, params, option, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
         var targetCol = db.collection(target);
@@ -288,7 +286,7 @@ function update(dbName, target, filter, params, option, callBack) {
             function(err, result) {
                 if (err) console.error(target + ".update failed ==> " + err);
                 result = result ? result.result : { ok: 1, nModified: 0, n: 0 };
-                callBack && callBack(err, result);
+                if (callBack) return callBack(err, result);
                 err ? reject(err) : resolve(result);
             });
     });
@@ -302,7 +300,7 @@ function findOneAndUpdate(dbName, target, filter, params, options) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -326,7 +324,7 @@ function findOneAndUpdate(dbName, target, filter, params, options) {
                 } catch (exp) {
                     doc = null;
                 }
-                callBack && callBack(err, doc);
+                if (callBack) return callBack(err, doc);
                 err ? reject(err) : resolve(doc);
             });
     });
@@ -340,7 +338,7 @@ function findOneAndDelete(dbName, target, filter, options) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -361,7 +359,7 @@ function findOneAndDelete(dbName, target, filter, options) {
                 } catch (exp) {
                     doc = null;
                 }
-                callBack && callBack(err, doc);
+                if (callBack) return callBack(err, doc);
                 err ? reject(err) : resolve(doc);
             });
     });
@@ -372,7 +370,7 @@ function ensureIndex(dbName, target, key, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -386,7 +384,7 @@ function ensureIndex(dbName, target, key, callBack) {
             indexes[key] = 1;
         }
         targetCol.ensureIndex(indexes, function(err, result) {
-            callBack && callBack(err, result);
+            if (callBack) return callBack(err, result);
             err ? reject(err) : resolve(result);
         });
     });
@@ -400,7 +398,7 @@ function remove(dbName, target, filters, options) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -414,7 +412,7 @@ function remove(dbName, target, filters, options) {
             function(err, result) {
                 if (err) console.error(target + ".update failed ==> " + err);
                 result = result ? result.result : { ok: 1, n: 0 };
-                callBack && callBack(err, result);
+                if (callBack) return callBack(err, result);
                 err ? reject(err) : resolve(result);
             }]));
     });
@@ -425,12 +423,12 @@ function listAllCollections(dbName, callBack) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
         db.collections(function(err, result) {
-            callBack && callBack(err, result);
+            if (callBack) return callBack(err, result);
             err ? reject(err) : resolve(result);
         });
     });
@@ -444,7 +442,7 @@ function close(dbName, delay) {
         var db = getDBByName(dbName);
         if (!db) {
             var err = createNotOpenErr(dbName);
-            callBack && callBack(err);
+            if (callBack) return callBack(err);
             return reject(err);
         }
 
@@ -460,7 +458,7 @@ function close(dbName, delay) {
                     if (isDefaultDB) defaultDB = undefined;
                     console.log("DBModel connection[" + dbName + "] has been closed.");
                 }
-                callBack && callBack(err);
+                if (callBack) return callBack(err);
                 err ? reject(err) : resolve();
             }, delay);
         });
@@ -476,10 +474,11 @@ function closeAll(callBack) {
 
         var closed = 0;
         dbs.forEach(function(dbName) {
-            close(dbName, function() {
+            close(dbName, function(err) {
+                err && console.error(`close db error: ${err}`);
                 closed ++;
                 if (closed >= dbs.length) {
-                    if (callBack) callBack();
+                    if (callBack) return callBack();
                     resolve();
                 }
             });
@@ -487,7 +486,7 @@ function closeAll(callBack) {
 
         if (dbs.length <= 0) {
             process.nextTick(function() {
-                callBack && callBack();
+                if (callBack) return callBack();
                 resolve();
             });
         }

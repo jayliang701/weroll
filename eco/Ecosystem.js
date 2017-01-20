@@ -79,7 +79,9 @@ exports.__callAPI = function(target, method, params, callBack) {
                 //if (DEBUG) console.log("[Ecosystem] *" + target + "* response --> ");
                 if (err) {
                     console.error(err);
-                    if (callBack) callBack(Error.create(CODES.ECOSYSTEM_ERROR, err.toString()));
+                    err = Error.create(CODES.ECOSYSTEM_ERROR, err.message || err.toString());
+                    if (callBack) return callBack(err);
+                    reject(err);
                 } else {
                     //if (DEBUG) console.log(body);
 
@@ -100,7 +102,7 @@ exports.__callAPI = function(target, method, params, callBack) {
                         body = body ? body.data : null;
                     }
 
-                    callBack && callBack(err, body);
+                    if (callBack) return callBack(err, body);
                     err ? reject(err) : resolve(body);
                 }
             });
@@ -201,30 +203,31 @@ exports.broadcast = function(event, data, callBack) {
             event = event.split("@");
             var target = event[0];
             event = event[1];
-            exports.fire(target, event, data, callBack);
+            exports.fire(target, event, data, function(err) {
+                if (callBack) return callBack(errs);
+                errs ? reject(errs) : resolve();
+            });
         } else {
-            var servers = Setting.ecosystem.servers;
-            if (servers) {
-                var p = [];
-                var errs;
-                for (var target in servers) {
-                    (function(s) {
-                        p.push(function(cb) {
-                            exports.fire(s, event, data, function(err) {
-                                if (err) {
-                                    if (!errs) errs = {};
-                                    errs[s] = err;
-                                }
-                                cb();
-                            });
+            var servers = Setting.ecosystem.servers || {};
+            var p = [];
+            var errs;
+            for (var target in servers) {
+                (function(s) {
+                    p.push(function(cb) {
+                        exports.fire(s, event, data, function(err) {
+                            if (err) {
+                                if (!errs) errs = {};
+                                errs[s] = err;
+                            }
+                            cb();
                         });
-                    })(target);
-                }
-                runAsParallel(p, function() {
-                    callBack && callBack(errs);
-                    errs ? reject(errs) : resolve();
-                });
+                    });
+                })(target);
             }
+            runAsParallel(p, function() {
+                if (callBack) return callBack(errs);
+                errs ? reject(errs) : resolve();
+            });
         }
     });
 }
@@ -236,7 +239,7 @@ exports.fire = function(target, event, data, callBack) {
         //if (DEBUG) console.log("[Ecosystem] *" + Setting.ecosystem.name + "* fire message to *" + target + "@" + address + "* --> " + event + " : " + (data ? JSON.stringify(data) : {}));
 
         exports.__fire(address, event, data, function(err, body) {
-            callBack && callBack(err, body);
+            if (callBack) return callBack(err, body);
             err ? reject(err) : resolve(body);
         });
     });
