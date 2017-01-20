@@ -303,13 +303,7 @@ function APIServer() {
                                 user.userid = userid;
                                 user.token = token;
                                 user.tokentimestamp = tokentimestamp;
-                                if (sess.extra) {
-                                    try {
-                                        user.extra = JSON.parse(sess.extra);
-                                    } catch (exp) {
-                                        user.extra = {};
-                                    }
-                                }
+                                user.extra = sess.extra || {};
                                 user.type = parseInt(sess.type);
                                 next(1, user);
                             });
