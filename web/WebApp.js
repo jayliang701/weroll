@@ -312,11 +312,14 @@ exports.start = function(setting, callBack) {
     APP_SETTING = setting;
     API_SESSION_AUTH_ONLY = APP_SETTING.session.apiCheck == 1;
 
+    var apiCompress = setting.compress ? setting.compress.api : false;
+
     App.COMMON_RESPONSE_DATA = {
         "ENV": setting.env,
         "SITE": setting.site,
         "SITE_DOMAIN": setting.site,
         "API_GATEWAY": setting.site + "api",
+        "API_COMPRESS": apiCompress,
         "SITE_NAME": setting.siteName,
         "RES_CDN_DOMAIN": setting.cdn.res,
         payment: setting.payment,
@@ -324,7 +327,7 @@ exports.start = function(setting, callBack) {
         upload: setting.upload,
         "COOKIE_PATH": setting.session.cookiePath
     };
-    WRP.config({ site:setting.site, compress:setting.compress ? setting.compress.api : false });
+    WRP.config({ site:setting.site, compress:apiCompress });
 
     Session.getSharedInstance().init(setting.session);
 

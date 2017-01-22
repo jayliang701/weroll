@@ -16,8 +16,22 @@ var PROFILING = global.VARS && global.VARS.profiling;
 var PureHttp = require("../net/PureHttp");
 var JsonAPIMiddleware = PureHttp.JsonAPIMiddleware;
 
-function CustomMiddleware() {
+function CustomMiddleware(options) {
+    options = options || {};
+
     var jam = new JsonAPIMiddleware();
+
+    if (options.compress) {
+        jam.generateAPIHeader = function() {
+            return { "Content-Type": "application/octet-stream" };
+        };
+        jam.encodeAPIData = function(data) {
+            return jsonZip(data);
+        };
+        jam.getAPIDataLength = function(data) {
+            return data.length;
+        };
+    }
 
     var profileRecords = [];
     var profileTimer = setInterval(function() {
@@ -77,7 +91,7 @@ function CustomMiddleware() {
 
         var identifyid = req.headers["identifyid"];
         if (!identifyid) {
-            identifyid = Utils.md5(req.headers["user-agent"] + req._clientIP + Date.now());
+            identifyid = md5(req.headers["user-agent"] + req._clientIP + Date.now());
             res.setHeader("identifyid", identifyid);
 
             //console.log("new identify_id --> " + identify_id);
@@ -101,11 +115,11 @@ function APIServer() {
     var instance = this;
 
     var server = PureHttp.createServer();
-    server.middleware(new CustomMiddleware());
 
     this.server = server;
 
     this.ParamsChecker = require("../utils/ParamsChecker");
+    this.AuthorityChecker = require("../utils/AuthorityChecker");
 
     if (DEBUG) {
         //show api debug page
@@ -122,8 +136,10 @@ function APIServer() {
 
         server.get("/__test", function(req, res, params) {
             var html = "";
+            var compress = instance.APP_SETTING.compress ? instance.APP_SETTING.compress.api : false;
             try {
                 html = FS.readFileSync(PATH.join(global.APP_ROOT, "client/views/__test.html"), {encoding:"utf8"});
+                html = html.replace('<head>', `<head><script>window.API_COMPRESS = ${compress}</script>`);
             } catch (exp) {
                 console.error(exp);
                 res.writeHead(404);
@@ -135,12 +151,12 @@ function APIServer() {
     }
 
     var SERVICE_MAP = {};
-    var APP_SETTING;
+    instance.APP_SETTING = null;
 
     var callAPI = function(method, params) {
         var req = this;
         var user = typeof arguments[2] == "function" ? null : arguments[2];
-        if (typeof user != "object") user = null;
+        if (typeof user != "object") user = { isLogined:false };
         var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
         if (typeof callBack != "function") callBack = null;
         method = method.split(".");
@@ -229,9 +245,15 @@ function APIServer() {
                         res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
                     }
                 } else {
-                    if (security.allowUserType && security.allowUserType != 1 && security.allowUserType.indexOf(user.type) < 0) {
-                        res.setAuth(null);
-                        res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+                    if (security.allow) {
+                        instance.AuthorityChecker.check(user, security.allow, function(err, checkResult) {
+                            if (checkResult) {
+                                service[method](req, res, params, user);
+                            } else {
+                                res.setAuth(null);
+                                res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+                            }
+                        });
                     } else {
                         service[method](req, res, params, user);
                     }
@@ -319,7 +341,9 @@ function APIServer() {
     }
 
     this.start = function(setting, callBack) {
-        APP_SETTING = setting;
+        this.APP_SETTING = setting;
+
+        server.middleware(new CustomMiddleware({ compress:setting.compress ? setting.compress.api : false }));
 
         if (setting.session && typeof setting.session == "object") {
             if (setting.session.constructor == Object) {

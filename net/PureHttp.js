@@ -135,20 +135,38 @@ function DefaultMiddleware() {
 
 function JsonAPIMiddleware() {
 
+    var instance = this;
+
+    this.generateAPIHeader = function() {
+        return { "Content-Type": "application/json" };
+    };
+    this.encodeAPIData = function(data) {
+        return JSON.stringify(data);
+    };
+    this.getAPIDataLength = function(data) {
+        return Buffer.byteLength(data, "utf8");
+    };
+
+    this.outputData = function(res, data, headers) {
+        var responseHeader = instance.generateAPIHeader();
+        if (headers) {
+            for (var key in headers) {
+                responseHeader[key] = headers[key];
+            }
+        }
+
+        data = instance.encodeAPIData(data);
+        responseHeader['Content-Length'] = instance.getAPIDataLength(data);
+        res.writeHead(200, responseHeader);
+        res.end(data);
+    }
+
     this.preprocess = function(req, res) {
         var success = function (data, headers) {
-            var responseHeader = { "Content-Type": "application/json" };
-            if (headers) {
-                for (var key in headers) {
-                    responseHeader[key] = headers[key];
-                }
-            }
             if (arguments.length == 0) data = { flag:1 };
-            var resBody = JSON.stringify({code: 1, data:data, msg:"OK"});
-            //if (req.query.callback) resBody = req.query.callback + "(" + resBody + ")";
-            responseHeader['Content-Length'] = Buffer.byteLength(resBody, "utf8");
-            this.writeHead(200, responseHeader);
-            this.end(resBody);
+            data = {code: 1, data:data, msg:"OK"};
+
+            instance.outputData(res, data, headers);
 
             this.profile();
         };
@@ -168,12 +186,8 @@ function JsonAPIMiddleware() {
                     msg = err.toString();
                 }
             }
-            var responseHeader = { "Content-Type": "application/json" };
-            var resBody = JSON.stringify({code: code, msg:msg});
-            //if (req.query.callback) resBody = req.query.callback + "(" + resBody + ")";
-            responseHeader['Content-Length'] = Buffer.byteLength(resBody, "utf8");
-            this.writeHead(200, responseHeader);
-            this.end(resBody);
+
+            instance.outputData(res, {code: code, msg:msg});
 
             this.profile();
         };
