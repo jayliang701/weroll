@@ -6,6 +6,14 @@ parent: guide
 ---
 
 <h3>View Router</h3>
+<ul class="guide_index">
+    <li><a href="#def">定义路由</a></li>
+    <li><a href="#template">视图模板引擎</a></li>
+    <li><a href="#data">传递数据到页面</a></li>
+    <li><a href="#filter">自定义模板引擎过滤器</a></li>
+</ul>
+<br>
+<h4><a name="def">定义路由</a></h4>
 如果要使用页面和页面路由，请使用WebApp来创建http服务，APIServer不提供页面渲染的功能。
 <br>
 页面路由代码需要定义在server/router目录或其子目录中，weroll启动时会自动解析并注册到Express中。一个典型的路由文件如下：
@@ -35,7 +43,8 @@ exports.getRouterMap = function() {
     ];
 }</code></pre>
 <br>
-<h4>视图模板引擎</h4>
+<br>
+<h4><a name="template">视图模板引擎</a></h4>
 weroll默认使用 nunjucks 作为模板引擎，请参考<a href="https://mozilla.github.io/nunjucks/" target="_blank">nunjucks官方文档</a>。你也可以使用其他的模板引擎如jade, ejs, swig等，示例代码如下：
 <pre><code class="javascript">//这是main.js中的代码片段<br>
 //var Setting = global.SETTING;<br>
@@ -56,7 +65,7 @@ Setting.viewEngine = {
 var webApp = require("weroll/web/WebApp").start(Setting);</code></pre>
 
 <br>
-<h4>传递数据到页面</h4>
+<h4><a name="data">传递数据到页面</a></h4>
 在路由的处理方法中，使用output即可输出数据。
 <pre><code class="javascript">//./server/router/index.js<br>
 function renderIndexPage(req, res, output, user)
@@ -90,7 +99,7 @@ require("weroll/web/WebApp").start(Setting, function(webApp) {
       href="&#123;&#123;setting.RES&#95;CDN&#95;DOMAIN&#125;&#125;/css/&#123;&#123;setting.defaultStyle&#125;&#125;.css" &gt;&lt;/link&gt;</code></pre>
 
 <br>
-<h4>自定义模板引擎过滤器</h4>
+<h4><a name="filter">自定义模板引擎过滤器</a></h4>
 通过 ViewEngineFilter.addFilter() 可以添加自定义过滤器，这里以nunjucks为例：
 <pre><code class="javascript">//./server/router/index.js<br>
 var ViewEngineFilter = require("weroll/utils/ViewEngineFilter");<br>

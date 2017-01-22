@@ -6,7 +6,16 @@ parent: guide
 ---
 
 <h3>API</h3>
-<h4>API的规则</h4>
+<ul class="guide_index">
+    <li><a href="#rule">API的规则</a></li>
+    <li><a href="#create">创建你自己的API</a></li>
+    <li><a href="#req">Request</a></li>
+    <li><a href="#res">Response</a></li>
+    <li><a href="#params">请求参数定义</a></li>
+</ul>
+<br>
+
+<h4><a name="rule">API的规则</a></h4>
 weroll的API统一使用 <b>[POST] http://域名/api</b> 作为入口，请求和响应数据使用json格式
 <br>
 <br>
@@ -26,7 +35,8 @@ weroll的API统一使用 <b>[POST] http://域名/api</b> 作为入口，请求�
 // code 表示错误码, 1表示正确, data 表示响应的结果数据, msg 表示消息, 当 code > 1 时则是错误的具体描述
 </code></pre>
 <br>
-<h4>创建你自己的API</h4>
+
+<h4><a name="create">创建你自己的API</a></h4>
 在 server/service目录中，新建一个脚本文件，比如UserService.js。Service文件必须在server/service目录或其子目录中，weroll在启动时会自动遍历里面的所有js文件，注册API。以下是一个典型的Service代码
 <pre><code class="javascript">//./server/service/UserService.js
 //配置这组API的前缀名和各个接口的参数定义
@@ -55,14 +65,17 @@ exports.bye = function(req, res, params) {
 现在启动程序，在浏览器中打开以下页面使用API调试工具进行测试<br>
 <pre><code class="css">http://localhost:3000/__test</code></pre>
 这是weroll自带的API调试工具，你可以使用这个工具调试进行API接口调试，它会自动解析出所有定义在service目录下的API接口，并识别其中的注释，将其变成API接口描述和参数的说明。<br>
-<div class="screenshot">![screenshot_1](/public/img/screenshot_1.jpg)</div>
+<div class="screenshot">
+<img src="/public/img/screenshot_1.jpg">
+<!-- ![screenshot_1](/public/img/screenshot_1.jpg) -->
+</div>
 <br>
 当然你也可以使用PostMan一类的工具进行调试。
 <br>
 <br>
 
-<h4>API中的 req 对象</h4>
-如果你使用的是WebApp类建立http服务，req对象则是Express框架中的Request对象，请参考Express的官方文档中的<a href="http://expressjs.com/en/4x/api.html#req" target="_blank">Request说明</a>。
+<h4><a name="req">Request</a></h4>
+在API方法参数中的 req 对象，如果你使用的是WebApp类建立http服务，req对象则是Express框架中的Request对象，请参考Express的官方文档中的<a href="http://expressjs.com/en/4x/api.html#req" target="_blank">Request说明</a>。
 <br>
 如果你使用的是APIServer类建立http服务，req对象则是原生http库中的request对象，请参考<a href="https://nodejs.org/api/http.html#http_class_http_clientrequest" target="_blank">Node.js官方文档</a>。
 <br>
@@ -104,8 +117,8 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 
 
 <br>
-<h4>API中的 res 对象</h4>
-如果你使用的是WebApp类建立http服务，res对象则是Express框架中的Response对象，请参考Express的官方文档中的<a href="http://expressjs.com/en/4x/api.html#res" target="_blank">Response说明</a>。
+<h4><a name="res">Response</a></h4>
+在API方法参数中的 res 对象，如果你使用的是WebApp类建立http服务，res对象则是Express框架中的Response对象，请参考Express的官方文档中的<a href="http://expressjs.com/en/4x/api.html#res" target="_blank">Response说明</a>。
 <br>
 如果你使用的是APIServer类建立http服务，res对象则是原生http库中的response对象，请参考<a href="https://nodejs.org/api/http.html#http_class_http_serverresponse" target="_blank">Node.js官方文档</a>。
 <br>
@@ -157,3 +170,75 @@ res.exec相当于执行了async.waterfall方法，如果队列中的任意一个
 </table>
 
 <br>
+<h4><a name="params">请求参数定义</a></h4>
+通过 <b>exports.config.security</b> 配置，我们可以给每一个API设定可选参数（optionalParams）和必须参数（checkParams），可以只有可选参数或必须参数，也可以都不设定。<br>
+<br>
+weroll自带了以下请求参数类型检查：
+<br>
+<table>
+    <thead>
+        <tr>
+            <td>Type</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>string</td>
+            <td>字符串 - 如"Jay Liang"，如果是必须参数，则不能为空字符串</td>
+        </tr>
+        <tr>
+            <td>number</td>
+            <td>数字 - 如2322，-80，100.31或者"999"，如果是String，则会转换成Number</td>
+        </tr>
+        <tr>
+            <td>int</td>
+            <td>整数 - 如100或者"100"，如果是String，则会转换成Number，如果是浮点数，则会变成整数</td>
+        </tr>
+        <tr>
+            <td>boolean</td>
+            <td>布尔值 - 如1或0，true或false</td>
+        </tr>
+        <tr>
+            <td>object</td>
+            <td>对象 - 如{ "name":"Jay", gender:1 } 或者 [ "Jay", 1 ]</td>
+        </tr>
+        <tr>
+            <td>array</td>
+            <td>数组对象 - 如 [ "Jay", 1 ]</td>
+        </tr>
+        <tr>
+            <td>geo</td>
+            <td>经纬度坐标 - 如 "121.47213,31.34533" 或者 [ 121.47213,31.34533 ]，最终将转为[ 经度,纬度 ]</td>
+        </tr>
+        <tr>
+            <td>email</td>
+            <td>电子邮箱 - 如 "123@456.com"</td>
+        </tr>
+        <tr>
+            <td>cellphone</td>
+            <td>中国手机号码 - 如 "18600000000"</td>
+        </tr>
+    </tbody>
+</table>
+请参考源代码 <a href="https://github.com/jayliang701/weroll/blob/master/utils/ParamsChecker.js" target="_blank">weroll/utils/ParamsChecker</a>
+<br>
+<br>
+开发者还可以自定义参数类型，示例代码如下：
+
+```js
+/* somewhere */
+//custom check function
+//only accept format: "上海|上海市|福州路1000号"
+var locationCheck = function(val) {
+    if (typeof val != "string") return { value:null, err:new Error("invalid format") };
+    val = val.split("|");
+    if (val.length < 3) return { value:null, err:new Error("invalid format") };
+    var loc = { province:val[0], city:val[1], street:val[2] };
+    return { value:loc };
+}
+
+//register
+var ParamsChecker = require("weroll/utils/ParamsChecker");
+ParamsChecker.register("location", locationCheck);
+```

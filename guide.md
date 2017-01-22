@@ -6,6 +6,21 @@ key: guide
 ---
 
 <h3>Guide</h3>
+<ul class="guide_index">
+    <li><a href="#install">Install</a></li>
+    <li><a href="#start">开始使用</a></li>
+</ul>
+<br>
+<h4><a name="install">Install</a></h4>
+NPM 安装：<br>
+<pre><code class="bash">$ npm install -save weroll</code></pre>
+<br>
+使用 weroll-cli 创建模板项目：<br>
+<pre><code class="bash">$ npm install -g weroll-cli</code></pre>
+<pre><code class="bash">$ weroll init mini DemoApp</code></pre>
+weroll-cli 提供了一些常见的项目的模板，参考 <a href="link" target="_blank">weroll-cli</a> 了解更多。<br>
+<br>
+<h4><a name="start">开始使用</a></h4>
 weroll并不是严格意义上的框架，而是一套web应用开发的工具集。对于weroll来说，数据库连接操作，页面程序和API定义都是可选的，我们可以根据实际需求选择性的使用weroll的功能。
 <br>
 <br>
