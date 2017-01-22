@@ -16,7 +16,7 @@ function RedisClient() {
 var Dispatcher = new EventEmitter();
 var client;
 var setting;
-var DEBUG = global.VARS.debug;
+var DEBUG = global.VARS ? global.VARS.debug : false;
 
 exports.isConnected = function() {
     return client && client.__working == true;
