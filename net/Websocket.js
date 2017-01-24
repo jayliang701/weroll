@@ -33,7 +33,6 @@ function Websocket(config) {
     this.traceInfo = traceInfo;
     this.config = config;
     this.io = null;
-    this.__subs = [];
 }
 
 Websocket.prototype.__proto__ = EventEmitter.prototype;
@@ -71,17 +70,12 @@ Websocket.prototype.start = function() {
 
         ins.emit("connection", socket);
     });
+    io.on('error', function(err){
+        ins.emit("error", err);
+    });
+
     traceLog(`instance start at port: ${port} ${config.server ? 'with http server' : ''}`);
     ins.emit("start");
-}
-
-Websocket.prototype.sub = function(type, handler) {
-    var ins = this;
-    if (ins.io) {
-        ins.io.on(type, handler);
-    } else {
-        ins.__subs.push([ type, handler ]);
-    }
 }
 
 module.exports = Websocket;
