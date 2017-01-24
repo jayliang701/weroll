@@ -75,7 +75,7 @@ Websocket.prototype.start = function() {
     });
 
     traceLog(`instance start at port: ${port} ${config.server ? 'with http server' : ''}`);
-    ins.emit("start");
+    ins.emit("start", io);
 }
 
 module.exports = Websocket;
