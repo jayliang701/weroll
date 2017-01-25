@@ -49,5 +49,9 @@ $ weroll init mini</code></pre>
             <td><a href="https://github.com/jayliang701/weroll-kickstarter-website" target="_blank">website</a></td>
             <td>网站模板项目，提供了用户账户注册、登录/登出，使用数据库创建用户数据，登录会话管理的示例</td>
         </tr>
+        <tr>
+            <td><a href="https://github.com/jayliang701/weroll-kickstarter-game" target="_blank">game</a></td>
+            <td>游戏服务器模板项目，提供了用户账户注册、登录/登出，多房间实时聊天</td>
+        </tr>
     </tbody>
 </table>
