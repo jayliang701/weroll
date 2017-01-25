@@ -81,7 +81,7 @@ exports.bye = function(req, res, params) {
 <br>
 <br>
 weroll对req对象添加了一些新的属性和方法，以便我们更有效率的开发<br>
-<table>
+<table class="doc">
     <thead>
         <tr>
             <td style="width:140px;">Property</td>
@@ -100,7 +100,7 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
     </tbody>
 </table>
 <br>
-<table>
+<table class="doc">
     <thead>
         <tr>
             <td style="width:140px;">Method</td>
@@ -124,7 +124,7 @@ weroll对req对象添加了一些新的属性和方法，以便我们更有效�
 <br>
 <br>
 同样，weroll也对res对象添加了一些新的方法<br>
-<table>
+<table class="doc">
     <thead>
         <tr>
             <td style="width:140px;">Method</td>
@@ -175,7 +175,7 @@ res.exec相当于执行了async.waterfall方法，如果队列中的任意一个
 <br>
 weroll自带了以下请求参数类型检查：
 <br>
-<table>
+<table class="doc">
     <thead>
         <tr>
             <td>Type</td>

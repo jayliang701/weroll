@@ -15,10 +15,10 @@ parent: guide
 weroll提供了WebApp和APIServer实现http服务。WebApp是对Express 4.X的封装，APIServer则是基于原生http库开发的极简http服务，仅支持API开发，不提供页面渲染。
 <br>
 以下是2者的详细区别说明
-<table>
+<table class="doc">
     <thead>
         <tr>
-            <td style="width:135px;"></td>
+            <td style="width:155px;"></td>
             <td>WebApp</td>
             <td>APIServer</td>
             <td></td>
@@ -26,51 +26,51 @@ weroll提供了WebApp和APIServer实现http服务。WebApp是对Express 4.X的�
     </thead>
     <tbody>
         <tr>
-            <td>VIew Render</td>
-            <td>Yes</td>
-            <td>No</td>
+            <td>View Render</td>
+            <td class="yes">Yes</td>
+            <td class="no">No</td>
             <td>APIServer only support __test page</td>
         </tr>
         <tr>
             <td>Custom Router</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td></td>
         </tr>
         <tr>
             <td>API</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td>APIServer faster 30-40%</td>
         </tr>
         <tr>
             <td>User Session</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td></td>
         </tr>
         <tr>
             <td>MongoDB</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td></td>
         </tr>
         <tr>
             <td>Redis</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td></td>
         </tr>
         <tr>
             <td>Cache</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td></td>
         </tr>
         <tr>
             <td>Multi Instances</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td class="yes">Yes</td>
+            <td class="yes">Yes</td>
             <td></td>
         </tr>
     </tbody>

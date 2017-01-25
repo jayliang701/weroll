@@ -50,7 +50,7 @@ module.exports ={
 
 <br>
 其中有3个重要的参数设置：<br>
-<table>
+<table class="doc">
     <thead>
         <tr>
             <td>Setting</td>

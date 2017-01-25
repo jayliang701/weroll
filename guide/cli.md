@@ -33,7 +33,7 @@ $ weroll init mini</code></pre>
 <br>
 目前可创建的模板项目有：
 <br>
-<table>
+<table class="doc">
     <thead>
         <tr>
             <td>Template</td>
