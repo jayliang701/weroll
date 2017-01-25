@@ -6,6 +6,7 @@ var ICONV = require('iconv-lite');
 var Crypto = require("crypto");
 var BufferHelper = require('bufferhelper');
 var _ = require("underscore");
+var moment = require("moment");
 var msgpack = require('msgpack5')();
 
 global.__defineGetter__('jsonZip', function() {
@@ -40,6 +41,10 @@ global.__defineGetter__('isEmpty', function() {
 
 global.__defineGetter__('_', function() {
     return _;
+});
+
+global.__defineGetter__('moment', function() {
+    return moment;
 });
 
 global.__defineGetter__('iconv', function() {
