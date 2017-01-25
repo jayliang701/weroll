@@ -22,7 +22,7 @@ exports.save = function(key, val) {
     if (!expired) expired = EXPIRED_MAP[key];
     CACHE.put(key, val, expired ? (expired * 1000) : undefined);
     //console.log('1 -> cache [' + key + '] saved. expire time: ' + expired);
-    callBack && process.nextTick(()=>callBack(val));
+    callBack && process.nextTick(()=>callBack(null, val));
     return val;
 }
 
@@ -30,7 +30,7 @@ exports.read = function(key, callBack) {
     if (key instanceof Array) key = key.join("-");
     var c = CACHE.get(key);
     //console.log('read cache [' + key + '] from 1.');
-    callBack && process.nextTick(()=>callBack(c));
+    callBack && process.nextTick(()=>callBack(null, c));
     return c;
 }
 
@@ -47,5 +47,5 @@ exports.setExpireTime = function(key, time) {
     if (val == undefined || val == null) {
         return;
     }
-    CACHE.put(key, val, time);
+    CACHE.put(key, val, time * 1000);
 }

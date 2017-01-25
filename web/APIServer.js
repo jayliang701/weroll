@@ -138,7 +138,7 @@ function APIServer() {
             var html = "";
             var compress = instance.APP_SETTING.compress ? instance.APP_SETTING.compress.api : false;
             try {
-                html = FS.readFileSync(PATH.join(global.APP_ROOT, "client/views/__test.html"), {encoding:"utf8"});
+                html = FS.readFileSync(PATH.join(__dirname, "./__test.html"), {encoding:"utf8"});
                 html = html.replace('<head>', `<head><script>window.API_COMPRESS = ${compress}</script>`);
             } catch (exp) {
                 console.error(exp);

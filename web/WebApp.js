@@ -408,6 +408,11 @@ exports.start = function(setting, callBack) {
 
         checkFolder(routerFolder, doRegisterRouter);
     }
+    if (global.VARS.debug) {
+        require("./__test.js").getRouterMap().forEach(function(r) {
+            registerRouter(r);
+        });
+    }
 
     //init services
     var serviceFolder = PATH.join(global.APP_ROOT, servicePath);
