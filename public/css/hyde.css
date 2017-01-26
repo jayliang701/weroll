@@ -56,7 +56,7 @@ html {
  */
 
 .sidebar {
-    font-size: 20px;
+  font-size: 20px;
   text-align: center;
   padding: 2rem 1rem;
   color: rgba(255,255,255,.5);
@@ -65,11 +65,15 @@ html {
 @media (min-width: 48em) {
   .sidebar {
     position: fixed;
+    /*position: absolute;*/
     top: 0;
     left: 0;
     bottom: 0;
     width: 18rem;
     text-align: left;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-top: 1em;
   }
 }
 
@@ -125,9 +129,9 @@ a.sidebar-nav-item.level2:focus {
 
 @media (min-width: 48em) {
   .sidebar-sticky {
-    position: absolute;
+    /*position: absolute;*/
     right:  1rem;
-    top: 1rem;
+    top: 0.5rem;
     left:   1rem;
   }
 }
@@ -268,7 +272,7 @@ a.sidebar-nav-item.level2:focus {
 }
 
 pre > code {
-  font: 1rem Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
 
 .screenshot > img { border-radius: 0; }
@@ -278,7 +282,9 @@ table tbody td { padding:15px; }
 
 .sidebar div.copyright {
     display: block;
-    position: fixed;
+    /*position: fixed;*/
+    /*position: absolute;*/
+    margin-top: 4em;
     left:1em;
     bottom:1em;
     font-size:0.7em;

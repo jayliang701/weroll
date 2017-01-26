@@ -9,6 +9,7 @@ parent: guide
 <ul class="guide_index">
     <li><a href="#intro">多级缓存</a></li>
     <li><a href="#config">缓存配置</a></li>
+    <li><a href="#ext">扩展N级缓存</a></li>
 </ul>
 <br>
 <h4><a name="intro">多级缓存</a></h4>
@@ -167,4 +168,131 @@ console.log(result);   //echo undefined
 注意：在cache.config中，<b>user_info</b> 这个缓存配置被用来处理weroll的Session读写，如果要使用weroll原生的Session功能，请保留这个缓存配置。
 
 
+<br>
+<h4><a name="ext">扩展N级缓存</a></h4>
+如果开发者希望使用文件系统或其他方式来处理缓存, 可以自行扩展三级缓存或更高级别的缓存, 开发者需要实现一个缓存处理对象, 该对象需要实现以下方法:<br>
 
+```js
+/* cache handler */
+
+exports.setExpireTime = function(key, val) {
+    //实现设置缓存失效时间
+}
+
+exports.registerExpiredTime = function(key, expireTime) {
+    //实现预先注册缓存失效时间, 方便在使用时可以不再显式指定失效时间
+}
+
+exports.save = function(key, val, expireTime, callBack) {
+    //实现写缓存, 需要返回Promise对象
+    return new Promise(function(resolve, reject) {
+        //your codes
+        //如果callBack存在, 则使用callBack, 不使用resolve和reject
+    });
+}
+
+exports.read = function(key, callBack) {
+    //实现读缓存, 需要返回Promise对象
+    return new Promise(function(resolve, reject) {
+        //your codes
+        //如果callBack存在, 则使用callBack, 不使用resolve和reject
+    });
+}
+
+exports.remove = function(key, callBack) {
+    //实现删除缓存, 需要返回Promise对象
+    return new Promise(function(resolve, reject) {
+        //your codes
+        //如果callBack存在, 则使用callBack, 不使用resolve和reject
+    });
+}
+
+```
+<br>
+我们用文件系统缓存作为示例:<br>
+
+```js
+/* somewhere */
+var Model = require("weroll/model/Model");
+
+var FileCache = {};
+FileCache.setExpireTime = function(key, val) {
+    //暂不实现
+}
+
+FileCache.registerExpiredTime = function(key, expireTime) {
+    //暂不实现
+}
+
+FileCache.save = function(key, val, expireTime, callBack) {
+    return new Promise(function(resolve, reject) {
+        if (key instanceof Array) key = key.join("-");
+        var cache = typeof val == "object" ? JSON.stringify(val) : val;
+        fs.writeFile(path.join(CACHE_FOLDER, key), cache, { encoding:"utf8" }, function(err) {
+            if (callBack) return callBack(err, val);
+            err ? reject(err) : resolve(val);
+        });
+    });
+}
+
+FileCache.read = function(key, callBack) {
+    return new Promise(function(resolve, reject) {
+        if (key instanceof Array) key = key.join("-");
+        fs.readFile(path.join(CACHE_FOLDER, key), { encoding:"utf8" }, function(err, cache) {
+            if (err && err.code == "ENOENT") {
+                //file is not exist
+                err = null;
+                cache = null;
+            }
+            var val = cache;
+            if (val) {
+                try {
+                    val = JSON.parse(cache);
+                } catch (exp) {
+                    //it is a non-object value
+                    val = cache;
+                }
+            }
+            if (callBack) return callBack(err, val);
+            err ? reject(err) : resolve(val);
+        });
+    });
+}
+
+FileCache.remove = function(key, callBack) {
+    return new Promise(function(resolve, reject) {
+        if (key instanceof Array) key = key.join("-");
+        fs.unlink(path.join(CACHE_FOLDER, key), function(err) {
+            if (err && err.code == "ENOENT") {
+                //no such file, ignores this error
+                err = null;
+            }
+            if (callBack) return callBack(err);
+            err ? reject(err) : resolve();
+        });
+    });
+}
+
+//注册为第三级缓存
+Model.registerCacheSystem(3, FileCache);
+
+
+/***************** Test *****************/
+
+var val = { name:"Jay" };
+var result = await Model.cacheSave("user", val, null, 3);
+assert(result);
+assert.equal(result, val);
+
+result = await Model.cacheRead("user", 3);
+assert(result);
+assert.equal(result.name, val.name);
+
+await Model.cacheRemove("user", 3);
+
+result = await Model.cacheRead("user", 3);
+assert.equal(result, undefined);
+```
+
+具体代码请参考<a href="https://github.com/jayliang701/weroll-kickstarter-test/blob/c6c1977af9d59eb1c5be415bfced1c6c7167e6a5/test/model/Model.js#L207" target="_blank">Model的测试用例</a>.
+<br>

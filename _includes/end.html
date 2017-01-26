@@ -1,0 +1,37 @@
+<script>
+    hljs.initHighlightingOnLoad();
+
+    function documentHeight() {
+        return Math.max(
+                document.documentElement.clientHeight,
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.offsetHeight
+        );
+    }
+
+    var inited = function() {
+        resize();
+
+        var imgs = document.getElementsByTagName("img");
+        for (var i = 0; i < imgs.length; i++) {
+            var img = imgs[i];
+            img.onload = function() {
+                console.log(img.getAttribute("src"));
+                resize();
+            }
+        }
+    }
+
+    var resize = function() {
+        var screenHeight = document.documentElement.clientHeight;
+        var realHeight = documentHeight();
+
+        var h = Math.max(screenHeight, realHeight);
+        document.getElementsByClassName('sidebar')[0].style.height = h + 'px';
+    }
+
+    //inited();
+
+</script>
