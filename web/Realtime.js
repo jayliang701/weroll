@@ -28,11 +28,12 @@ exports.createServer = function(config, noGlobal) {
 
                 server.traceLog(`client *${socket.id}* start shakehand...`);
 
+                server.emit("shakeHandStart", socket);
                 adapter.shakehand(socket, data, function(flag) {
                     adapter.shakehandComplete(socket, flag, function (flag) {
                         if (flag) {
                             adapter.shakehandSuccess(socket);
-                            server.emit("shakeHandeSuccess", socket);
+                            server.emit("shakeHandSuccess", socket);
                         } else {
                             adapter.shakehandFail(socket);
                             server.emit("shakehandFail", socket);
