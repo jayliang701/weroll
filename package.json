@@ -1,6 +1,6 @@
 {
   "name": "weroll",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Build Your Web Application Fast and Less Codes.",
   "main": "index.js",
   "scripts": {

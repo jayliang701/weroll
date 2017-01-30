@@ -9,6 +9,7 @@ var Model = require("./../model/Model");
 var Session = require("./../model/Session");
 var Utils = require("./../utils/Utils");
 var CODES = require("./../ErrorCodes");
+var Profiler = require("../utils/Profiler");
 var WRP = require("./WebRequestPreprocess");
 
 var ParamsChecker = require("../utils/ParamsChecker");
@@ -82,6 +83,7 @@ App.post("/api", function (req, res) {
         return;
     }
 
+    req.$target = method;
     method = method.split(".");
     var service = SERVICE_MAP[method[0]];
     if (!service || !service.hasOwnProperty(method[1])) {
@@ -116,6 +118,8 @@ App.post("/api", function (req, res) {
     if (!API_SESSION_AUTH_ONLY) {
         auth = auth ? auth : req.cookies;
     }
+
+    req.$startTime = Date.now();
 
     method = method[1];
 
@@ -211,9 +215,14 @@ function registerRouter(r) {
                 } else {
                     res.render(view, { setting:App.COMMON_RESPONSE_DATA, data:data, user:user, now:now, query:req.query });
                 }
+                res.profile();
             }.bind(res);
 
             var r_handle = null;
+
+            req.$startTime = now;
+            req.$target = r.url + "@" + req.method;
+
             if(req.method == "POST"){
                 if (r.postHandle) r_handle = r.postHandle;
             }else{

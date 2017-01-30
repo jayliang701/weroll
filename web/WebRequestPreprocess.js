@@ -4,7 +4,10 @@
 
 var UTIL = require("util");
 var Utils = require("./../utils/Utils");
+var Profiler = require("../utils/Profiler");
 var CODES = require("./../ErrorCodes");
+
+var PROFILING = global.VARS && global.VARS.profiling;
 
 var options;
 
@@ -20,6 +23,8 @@ var getAPIDataLength = function(data) {
     return Buffer.byteLength(data, "utf8");
 };
 
+var profile = function() { }
+
 exports.config = function(opt) {
     options = opt;
     if (options.compress) {
@@ -32,6 +37,14 @@ exports.config = function(opt) {
         getAPIDataLength = function(data) {
             return data.length;
         };
+    }
+    if (PROFILING) {
+        var profiler = new Profiler(options.profiling);
+        profiler.start();
+
+        profile = function() {
+            profiler.recordRequest(this._req);
+        }
     }
 }
 
@@ -76,12 +89,13 @@ function outputData(data, headers) {
     responseHeader['Content-Length'] = getAPIDataLength(data);
     this.writeHead(200, responseHeader);
     this.end(data);
+    this.profile();
 }
 
 function sayError() {
     var code, msg;
     if (arguments.length == 1 && arguments[0]) {
-        if (UTIL.isArray(arguments[0])) {
+        if (arguments[0] instanceof Array) {
             code = arguments[0][0];
             msg = arguments[0][1];
         } else if (arguments[0].code && arguments[0].msg) {
@@ -159,6 +173,7 @@ function sendBinary(data, mime, headers) {
     }
     this.writeHead(200, responseHeader);
     this.end(data);
+    this.profile();
 }
 
 function goPage(url, code) {
@@ -167,6 +182,7 @@ function goPage(url, code) {
         url = options.site + url;
     }
     code = code ? code : 303;
+    this.profile();
     this.redirect(code, url);
 }
 
@@ -198,6 +214,7 @@ function preprocess(req, res, next) {
     res.sayOK = sayOK.bind(res);
     res.sendBinary = sendBinary.bind(res);
     res.goPage = goPage.bind(res);
+    res.profile = profile.bind(res);
 
     next();
 };

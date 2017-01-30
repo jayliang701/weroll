@@ -8,6 +8,7 @@ var Model = require("../model/Model");
 var Redis = require("../model/Redis");
 var Session = require("../model/Session");
 var Utils = require("../utils/Utils");
+var Profiler = require("../utils/Profiler");
 var CODES = require("./../ErrorCodes");
 
 var DEBUG = global.VARS && global.VARS.debug;
@@ -33,27 +34,14 @@ function CustomMiddleware(options) {
         };
     }
 
-    var profileRecords = [];
-    var profileTimer = setInterval(function() {
-        //save profile
-        saveProfile();
-    }, 3000);
-
-    function saveProfile() {
-        if (profileRecords && profileRecords.length > 0) {
-            Redis.multi(profileRecords);
-            profileRecords.length = 0;
-        }
-    }
     function profiling(req) { }
     if (PROFILING) {
-        profiling = function(req) {
-            if (isNaN(req.$apiStartTime) || req.$apiStartTime <= 0) return;
-            var now = Date.now();
-            var costTime = Date.now() - req.$apiStartTime;
-            var method = req.$apiMethod.replace(".", "_");
 
-            profileRecords.push([ "ZADD", Redis.join(`profile_api_${method}`), costTime, now ]);
+        var profiler = new Profiler(options.profiling);
+        profiler.start();
+
+        profiling = function(req) {
+            profiler.recordRequest(req);
         }
     }
 
@@ -81,7 +69,7 @@ function CustomMiddleware(options) {
 
         this.processCORS(req, res);
 
-        res.setHeader("Access-Control-Allow-Headers", "IdentifyID, X-Requested-With, X-HTTP-Method-Override, Content-Type, Content-Length, Connection, Origin, Accept, Authorization, userid, token, tokentimestamp");
+        res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Content-Length, Connection, Origin, Accept, Authorization, identifyid, userid, token, tokentimestamp");
 
         res.setAuth = setResponseAuth.bind(res);
 
@@ -184,7 +172,7 @@ function APIServer() {
             return;
         }
 
-        req.$apiMethod = method;
+        req.$target = method;
         method = method.split(".");
         var service = SERVICE_MAP[method[0]];
         if (!service || !service.hasOwnProperty(method[1])) {
@@ -217,7 +205,7 @@ function APIServer() {
             }
         }
 
-        req.$apiStartTime = Date.now();
+        req.$startTime = Date.now();
 
         method = method[1];
 
@@ -343,7 +331,10 @@ function APIServer() {
     this.start = function(setting, callBack) {
         this.APP_SETTING = setting;
 
-        server.middleware(new CustomMiddleware({ compress:setting.compress ? setting.compress.api : false }));
+        server.middleware(new CustomMiddleware({
+            compress:setting.compress ? setting.compress.api : false,
+            profiling:setting.profiling
+        }));
 
         if (setting.session && typeof setting.session == "object") {
             if (setting.session.constructor == Object) {
