@@ -8,9 +8,7 @@ parent: guide
 <h3>weroll-cli</h3>
 <ul class="guide_index">
     <li><a href="#what">什么是weroll-cli</a></li>
-    <li><a href="#template">视图模板引擎</a></li>
-    <li><a href="#data">传递数据到页面</a></li>
-    <li><a href="#filter">自定义模板引擎过滤器</a></li>
+    <li><a href="#list">模板项目列表</a></li>
 </ul>
 <br>
 <h4><a name="what">什么是weroll-cli</a></h4>
@@ -31,6 +29,8 @@ $ weroll init {模板} {项目/目录名称}</code></pre>
 $ weroll init mini</code></pre>
 
 <br>
+<br>
+<h4><a name="list">模板项目列表</a></h4>
 目前可创建的模板项目有：
 <br>
 <table class="doc">

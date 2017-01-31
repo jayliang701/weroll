@@ -119,7 +119,7 @@ if (cluster.isMaster) {
     });
 } else {
     //setup weroll application
-    require("./server.js");
+    require("./main.js");
     console.log(`Worker ${process.pid} started`);
 }
 ```
