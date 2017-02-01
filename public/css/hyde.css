@@ -329,6 +329,10 @@ ul.explain > li > span:last-child {
     color: #2f6f9f;
 }
 
+ul.explain.short > li > span:first-child {
+    width: 80px;
+}
+
 .yes {
     color: green;
 }
