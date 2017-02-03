@@ -42,7 +42,7 @@ exports.send = function(phone, type, option, callBack) {
         vcode.generate(phone + "_" + type, option, function(err, code) {
             var params = option.params || {};
             params.code = code;
-            SMSUtil.sendWithTemplate(phone, option.template || "validation", params, function(err) {
+            SMSUtil.sendWithTemplate(phone, option.template || "validation", params, option, function(err) {
                 if (err) {
                     if (callBack) return callBack(err);
                     return reject(err);

@@ -17,6 +17,7 @@ exports.init = function(setting) {
     config = setting;
     PREFIX = setting.prefix || "sms_log_";
     SIMULATION = config.simulate;
+    if (config.hasOwnProperty("debug")) DEBUG = config.debug;
 }
 
 function logAfterSend(phone, redisObj) {
@@ -150,6 +151,7 @@ function checkIsAllowToSend(phone, callBack) {
 proxy = {};
 proxy.send = function(phone, msg) {
     var option = typeof arguments[2] == "object" ? arguments[2] : {};
+    option = option || {};
     var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
     if (typeof callBack != "function") callBack = null;
 
