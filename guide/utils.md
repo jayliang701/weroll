@@ -76,7 +76,13 @@ console.log(template.content);
 <br>
 <br>
 <h4><a name="sms">发送手机短信</a></h4>
-使用 <b>weroll/utils/SMSUtil</b> 可以实现手机短信发送服务。开发者可以根据实际合作的短信发送服务提供商所提供的接口，自定义短信发送的业务代码。使用方法如下：
+使用 <b>weroll/utils/SMSUtil</b> 可以实现手机短信发送服务。开发者可以根据实际合作的短信发送服务提供商所提供的接口，自定义短信发送的业务代码。
+<br>
+<br>
+<b>注意: 使用SMSUtil需要开启redis服务.</b>
+<br>
+<br>
+SMSUtil使用方法如下：
 
 ```js
 var SMSUtil = require("weroll/utils/SMSUtil");
@@ -136,7 +142,11 @@ SMSUtil.sendWithTemplate("18600000000", "test", { name:"Jay" }, { enforce:true }
 <h4><a name="phone">手机验证码</a></h4>
 在开发互联网应用时，我们经常需要发送手机短信验证码，如新用户注册，用户找回密码等业务场景，使用 <b>weroll/utils/PhoneValidationCode</b> 可以实现手机短信验证码功能。
 <br>
-<b>PhoneValidationCode</b> 依赖 <b>TemplateLib</b> 和 <b>SMSUtil</b>，在使用需要先初始化这2个依赖库，示例代码如下：
+<br>
+<b>注意: 使用PhoneValidationCode需要开启redis服务.</b>
+<br>
+<br>
+<b>PhoneValidationCode</b> 依赖 <a href="#template">TemplateLib</a> 和 <a href="#sms">SMSUtil</a>，在使用前需要先初始化这2个依赖库，示例代码如下：
 
 ```js
 /* init SMSUtil */
@@ -167,11 +177,45 @@ TemplateLib.init({ site:"My WebSite" });
 PhoneValidationCode.init();
 ```
 
+<b>PhoneValidationCode.init([option])</b> 可以设置一些默认参数, 参数列表如下:
+
+<table>
+    <thead>
+        <tr>
+            <td>Option</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>len</td>
+            <td>验证码长度，默认是6位</td>
+        </tr>
+        <tr>
+            <td>pattern</td>
+            <td>验证码生成规则，默认是纯数字。也可以定义以下的规则:<pre><code>/* 验证码生成规则，这里表示用0-9A-Z随机生成 */<br>PhoneValidationCode.init({ pattern:[ [0,9], ["A","Z"] ] });</code></pre></td>
+        </tr>
+        <tr>
+            <td>simulate</td>
+            <td>true/false, 是否开启模拟发送短信。默认是false.</td>
+        </tr>
+        <tr>
+            <td>debug</td>
+            <td>true/false, 是否开启DEBUG模式。默认使用global.VARS.debug.</td>
+        </tr>
+        <tr>
+            <td>expire</td>
+            <td>验证码默认的失效时间, 单位是秒, 默认是15分钟. 也可以在调用send()方法时, 使用expire参数来单独指定某一次验证码的失效时间.</td>
+        </tr>
+    </tbody>
+</table>
+
+<br>
 <br>
 使用 <b>PhoneValidationCode.send()</b> 方法发送验证码：
 
 ```js
-PhoneValidationCode.send(PHONE_NUMBER, GROUP, [OPTION], [CALLBACK]);
+PhoneValidationCode.send(phone, group, [option], [callback]);
 ```
 
 
@@ -184,24 +228,26 @@ PhoneValidationCode.send(PHONE_NUMBER, GROUP, [OPTION], [CALLBACK]);
     </thead>
     <tbody>
         <tr>
-            <td>PHONE_NUMBER</td>
+            <td>phone</td>
             <td>发送目标的手机号码</td>
         </tr>
         <tr>
-            <td>GROUP</td>
+            <td>group</td>
             <td>验证码类型，由开发者自由定义，如register表示用于注册的验证码，pwd表示用于找回密码。同一类型验证码将受到最小发送时间间隔的限制。</td>
         </tr>
         <tr>
-            <td>OPTION</td>
-            <td>可选参数<pre><code>{
+            <td>option</td>
+            <td>可选参数<pre><code class="javascript">{
     len:10, /* 验证码长度，默认是6位 */
     pattern:[ [0,9], ["A","Z"] ],   /* 验证码生成规则，这里表示用0-9A-Z随机生成，默认是纯数字 */
     template:"test",  /* 发送短信的内容模板名，默认使用validation.tpl内容模板 */
-    enfore:true/false    /* 是否强制发送，强制表示无视短信发送的时间间隔和当天最大次数 */
+    enfore:true/false,    /* 是否强制发送，强制表示无视短信发送的时间间隔和当天最大次数 */
+    params:{ name:"Jay" },   /* 短信内容模板中需要替换占位符的变量值 */
+    expire:5 * 60,    /* 验证码的失效时间, 单位是秒, 默认是15分钟或者使用init()时设置的失效时间. */
 }</code></pre></td>
         </tr>
         <tr>
-            <td>CALLBACK</td>
+            <td>callback</td>
             <td>可选，回调方法，返回err和code。code表示生成的验证码。</td>
         </tr>
     </tbody>
@@ -215,4 +261,59 @@ PhoneValidationCode.send(PHONE_NUMBER, GROUP, [OPTION], [CALLBACK]);
 validation code: %code%
 ```
 
-title可为空，<b>%code%</b> 表示验证码占位符
+title可为空，<b>%code%</b> 表示验证码占位符. 详细使用模板请参考 - <a href="#template">内容模板</a>.
+<br>
+<br>
+PhoneValidationCode完整的API如下:
+<table>
+    <thead>
+        <tr>
+            <td>Method</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>init()</td>
+            <td><pre><code class="javascript">PhoneValidationCode.init([option])</code></pre>初始化</td>
+        </tr>
+        <tr>
+            <td>send()</td>
+            <td><pre><code class="javascript">PhoneValidationCode.send(phone, group, [option], [callback])</code></pre>发送短信验证码</td>
+        </tr>
+        <tr>
+            <td>check()</td>
+            <td><pre><code class="javascript">PhoneValidationCode.check(phone, group, code, [callback])</code></pre>仅检查短信验证码是否匹配.<br>callback返回Error和一个布尔值, 表示是否匹配, true表示匹配.</td>
+        </tr>
+        <tr>
+            <td>use()</td>
+            <td><pre><code class="javascript">PhoneValidationCode.use(phone, group, code, [callback])</code></pre>检查短信验证码是否匹配, 如果匹配则自动清除验证码记录<br>callback返回Error和一个布尔值, 表示是否匹配, true表示匹配.</td>
+        </tr>
+        <tr>
+            <td>remove()</td>
+            <td><pre><code class="javascript">PhoneValidationCode.remove(phone, group)</code></pre>清除验证码记录</td>
+        </tr>
+    </tbody>
+</table>
+
+
+完整的示例代码如下:
+
+```js
+async function() {
+    var phone = "18600000000";
+
+    //send validation code for user registration
+    var code = await PhoneValidationCode.send(phone, "register", { template:"register_code_sms" });
+
+    //check validation code
+    var isMatch = await PhoneValidationCode.use(phone, "register", code);
+    if (isMatch) {
+        //match
+        //make success response to user
+    } else {
+        //not match
+        //make fail response to user
+    }
+}
+```
