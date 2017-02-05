@@ -10,6 +10,7 @@ parent: guide
     <li><a href="#template">内容模板</a></li>
     <li><a href="#sms">发送手机短信</a></li>
     <li><a href="#phone">手机验证码</a></li>
+    <li><a href="#mail">发送邮件</a></li>
 </ul>
 <br>
 <h4><a name="template">内容模板</a></h4>
@@ -315,5 +316,188 @@ async function() {
         //not match
         //make fail response to user
     }
+}
+```
+
+<br>
+<br>
+<h4><a name="mail">发送邮件</a></h4>
+使用 <b>weroll/utils/MailUtil</b> 可以实现邮件发送服务。
+<br>
+MailUtil使用方法如下：
+
+```js
+var MailUtil = require("weroll/utils/MailUtil");
+
+/* initialize */
+var config = {
+    //邮箱smtp服务配置
+    smtp:{
+        user:"developer@magicfish.cn",
+        password:"xxxxxxxxx",
+        host:"smtp.xxxx.com",
+        port:465,
+        ssl:true
+    },
+    sender:"developer@magicfish.cn",  //写信人的邮箱
+    senderName:"Robot", //写信人的名字
+    simulate:true,   //是否开启模拟发送模式
+    debug:true    //是否开启DEBUG模式,默认使用global.VARS.debug
+};
+MailUtil.init(config);
+
+/* send with callBack */
+MailUtil.send("xxxxxx@qq.com", "Hello", "Hi Tracy,\r\nWelcome...", function(err) {
+    err && console.error(err);
+});
+
+/* send with promise */
+MailUtil.send("xxxxxx@qq.com", "Hello", "Hi Tracy,\r\nWelcome...").
+then(function() {
+    //do something
+}).
+catch(function(err) {
+    console.error(err);
+});
+
+/* send with async & await */
+async function() {
+    await MailUtil.send("xxxxxx@qq.com", "Hello", "Hi Tracy,\r\nWelcome...");
+}
+
+/* send html */
+var content = {
+    plain: "Hi Tracy,\r\nWelcome...",
+    html: "Hi Tracy,<br><h1>Welcome</h1>"
+};
+MailUtil.send("xxxxxx@qq.com", "Hello", content);
+```
+
+<br>
+MailUtil默认使用 <a href="https://www.npmjs.com/package/emailjs" target="_blank">emailjs</a> 来发送邮件, MailUtil.init() 初始化参数请参考emailjs的文档.
+<br>
+<br>
+MailUtil同样可以使用内容模板作为邮件的正文和标题来发送邮件:
+
+```js
+MailUtil.sendWithTemplate(mailto, template, args, [option], [callback])
+```
+<table>
+    <thead>
+        <tr>
+            <td>Argument</td>
+            <td>Description</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>mailto</td>
+            <td>收件人的邮箱地址, 多个收件人用逗号分隔</td>
+        </tr>
+        <tr>
+            <td>template</td>
+            <td>模板文件的文件名, 如welcome, 那么MailUtil将自动使用 <b>./server/res/template/mail/welcome.tpl</b> 这个模板文件; 如果存在 <b>welcome.html.tpl</b> 模板文件, MailUtil则自动使用它作为html格式的邮件正文.</td>
+        </tr>
+        <tr>
+            <td>args</td>
+            <td>内容模板的变量值, 如 { name:"Jay" }, 则替换模板中的 %name% 占位符.</td>
+        </tr>
+        <tr>
+            <td>option</td>
+            <td>[可选] 配置参数, 默认没有用处, 当开发者自定义邮件发送代码时, 可以用来实现一些特殊的需求.</td>
+        </tr>
+        <tr>
+            <td>callback</td>
+            <td>[可选] 回调函数, 返回Error对象.</td>
+        </tr>
+    </tbody>
+</table>
+
+具体使用示例如下:
+
+```
+/* ./server/res/template/mail/welcome.tpl */
+Welcome %name%
+**********%*********
+This is test template.
+site: %site%   name: %name%
+```
+
+```
+/* ./server/res/template/mail/welcome.html.tpl */
+Welcome %name%
+**********%*********
+This is test template.
+<br>
+<h1>site: %site%   name: %name%</h1>
+```
+
+```js
+/* your code */
+//send html using template
+async function() {
+    await MailUtil.sendWithTemplate("xxxxxx@qq.com", "welcome", { name:Jay });
+}
+```
+
+<br>
+<br>
+在实际使用中, 邮件发送可能受制于网络或者邮件服务器设置, 导致邮件发送异常. 开发者可以尝试使用其他的邮件发送库来替换默认的emailjs库, 我们以 <a href="https://www.npmjs.com/package/nodemailer" target="_blank">nodemailer</a> 库为例:
+
+```js
+var nodemailer = require('nodemailer');
+
+/* step 1 : define custom proxy */
+var MyProxy = {};
+MyProxy.init = function(config) {
+    MyProxy.$transporter = nodemailer.createTransport(config.stmp);
+}
+MyProxy.send = function(from, to, title, plainText, htmlText, option, callBack) {
+   return new Promise(function(resolve, reject) {
+       var mailOpt = {
+           from: from,      // sender address
+           to: to,          // list of receivers
+           subject: title,  // subject line
+           text: plainText, // plaintext body
+           html: htmlText   // html body
+       };
+
+       MyProxy.$transporter.sendMail(mailOpt, function(err){
+           if (err) {
+               console.error('sent result error: ', err);
+               if (callBack) return callBack(err);
+               return reject(err);
+           }
+           if (callBack) return callBack();
+           return resolve();
+       });
+   });
+}
+//register proxy
+MailUtil.setProxy(MyProxy);
+
+
+/* step 2 : initialize */
+var config = {
+    //邮箱smtp服务配置
+    smtp:{
+        host: 'smtp.xxxx.com',
+        port: 465,
+        secure: true, // use SSL
+        auth: {
+            user: 'developer@magicfish.cn',
+            pass: 'xxxxxxx'
+        }
+    },
+    sender:"developer@magicfish.cn",  //写信人的邮箱
+    senderName:"Developer", //写信人的名字
+    simulate:true,   //是否开启模拟发送模式
+    debug:true    //是否开启DEBUG模式,默认使用global.VARS.debug
+};
+MailUtil.init(config);
+
+//send like before but now we are using nodemailer
+async function() {
+    await MailUtil.sendWithTemplate("xxxxxx@qq.com", "welcome", { name:Jay });
 }
 ```
