@@ -22,17 +22,17 @@ proxy.init = function(config) {
     proxy.$server = EMAIL.server.connect(config.stamp);
 }
 
-proxy.send = function(from, to, title, content, option, callBack) {
+proxy.send = function(from, to, title, plainText, htmlText, option, callBack) {
     var ins = this;
     return new Promise(function(resolve, reject) {
         var mail = {
             from: from,
             to: to,
             subject: title,
-            text: content,
+            text: plainText,
             attachment: []
         };
-        mail.attachment.push({ data: content, alternative:true });
+        String(htmlText).hasValue() && mail.attachment.push({ data: htmlText, alternative:true });
 
         ins.$server.send(mail, function(err, message) {
             if (err) {
@@ -65,6 +65,13 @@ exports.send = function(to, title, content, option, callBack) {
     var from = config.sender;
     if (config.senderName) from = config.senderName + " <" + from + ">";
 
+    var plain = content;
+    var html;
+    if (typeof content == "object") {
+        plain = content.plain;
+        html = content.html;
+    }
+
     return new Promise(function(resolve, reject) {
         if (SIMULATION) {
             setTimeout(function() {
@@ -72,12 +79,13 @@ exports.send = function(to, title, content, option, callBack) {
                 console.log("from: ", from);
                 console.log("to: ", to);
                 console.log("title: ", title);
-                console.log("content: ", content);
+                console.log("plainText: ", plain);
+                console.log("htmlText: ", html);
                 if (callBack) return callBack();
                 resolve();
             }, 20);
         } else {
-            proxy.send(from, to, title, content, option, function(err) {
+            proxy.send(from, to, title, plain, html, option, function(err) {
                 if (err) {
                     if (callBack) return callBack(err);
                     return reject(err);
@@ -95,8 +103,9 @@ exports.sendWithTemplate = function(to, templateKey, params, option, callBack) {
     callBack = typeof arguments[3] == "function" ? arguments[3] : arguments[4];
     if (typeof callBack != "function") callBack = null;
 
-    var tpl = TemplateLib.useTemplate("mail", templateKey, params);
-    send(to, tpl.title, tpl.content, option, callBack);
+    var tpl1 = TemplateLib.useTemplate("mail", templateKey, params);
+    var tpl2 = TemplateLib.useTemplate("mail", templateKey + ".html", params);
+    exports.send(to, tpl1.title, { plain:tpl1.content, html:tpl2.content }, option, callBack);
 }
 
 exports.setProxy = function(newProxy) {

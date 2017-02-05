@@ -52,7 +52,13 @@ function useTemplate(group, key, args) {
     groupMap[key] = groupMap[key] ? groupMap[key] : null;
 
     if (!groupMap[key]) {
-        var all = FS.readFileSync(PATH.join(global.APP_ROOT, "server/res/template/" + group + "/" + key + ".tpl"));
+        var all;
+        try {
+            all = FS.readFileSync(PATH.join(global.APP_ROOT, "server/res/template/" + group + "/" + key + ".tpl"));
+        } catch (exp) {
+            //no such file
+            return { title:"", content:"" };
+        }
         all = all.toString("utf8");
         var parts = all.split(TITLE_CONTENT_SEP);
         var title = parts.length > 1 ? parts[0].trim() : "";
