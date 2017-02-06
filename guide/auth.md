@@ -233,7 +233,7 @@ exports.getRouterMap = function() {
 var Session = require("weroll/model/Session");
 
 var user = { userid:userData._id, type:userData.type };
-user.extra = JSON.stringify([ userData.nickname, userData.head, userData.arg1 ]);
+user.extra = [ userData.nickname, userData.head, userData.arg1 ];
 
 //callback
 Session.getSharedInstance().save(user);
