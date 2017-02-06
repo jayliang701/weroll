@@ -18,6 +18,7 @@ var intervalThreadPool = [];
 var dailyThreadPool = [];
 
 var DEBUG;
+var setting;
 
 function checkIsInTimeRange(startTime, endTime) {
     var now = new Date();
@@ -40,9 +41,10 @@ function checkIsInTimeRange(startTime, endTime) {
     return true;
 }
 
-exports.start = function(debug) {
+exports.start = function(option) {
+    setting = option || {};
 
-    DEBUG = debug;
+    DEBUG = option.hasOwnProperty("option") ? option.debug : global.VARS.debug;
 
     if (!config) {
         config = FS.readFileSync(PATH.join(global.APP_ROOT, "server/config/" + global.VARS.env + "/schedule.json"));
@@ -150,7 +152,7 @@ function timeRunning() {
             thread.dailyExecuteTime = scheduleTime;
             var nextTime = new Date();
             nextTime.setTime(scheduleTime);
-            if (DEBUG) console.log("daily schedule [" + thread.data.script + "] will be executed at: " + nextTime.toLocaleString());
+            DEBUG && console.log("daily schedule [" + thread.data.script + "] will be executed at: " + nextTime.toLocaleString());
         }
 
         var d = nowms - thread.dailyExecuteTime;
@@ -166,16 +168,16 @@ function execScript(script, callBack, option, disableTime) {
     if (disableTime) {
         for (var i = 0; i < disableTime.length; i++) {
             if (checkIsInTimeRange(disableTime[i][0], disableTime[i][1])) {
-                if (DEBUG) console.log("*" + script + "* in disable time ==> skip.");
+                DEBUG && console.log("*" + script + "* in disable time ==> skip.");
                 setTimeout(callBack, 100);
                 return;
             }
         }
     }
-    if (DEBUG) console.log("ready to execute script ==> " + script);
+    DEBUG && console.log("ready to execute script ==> " + script);
     var scriptJS = global.requireModule("schedule/" + script + ".js");
     scriptJS.exec(function(err) {
-        if (err) console.error("*" + script + "* throws an error ==> " + err.toString());
+        if (err) console.error("*" + script + "* throws an error ==> ", err);
         if (callBack) callBack(err);
     }, option ? JSON.parse(JSON.stringify(option)) : {});
 }
