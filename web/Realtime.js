@@ -151,11 +151,8 @@ function DefaultAdapter(server) {
         var socket = this;
         return new Promise(function(resolve, reject) {
             socket.leave(room, function (err) {
-                if (err) {
-                    if (callBack) return callBack(err);
-                    return reject(err);
-                }
-                resolve();
+                if (callBack) return callBack(err);
+                err ? reject(err) : resolve();
             });
         });
     }
