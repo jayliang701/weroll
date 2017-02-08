@@ -31,17 +31,20 @@ exports.init = function(option, callBack) {
 
         for (var group in CACHE_CONFIG) {
             var defs = CACHE_CONFIG[group];
+            if (group == "*" || group == "general") {
+                group = null;
+            }
             for (var key in defs) {
-                var fullKey = group + "-" + key;
+                var fullKey = group ? (group + "." + key) : key;
                 var def = defs[key];
                 if (def.level == 0) {
                     SYNC_UP_LEVEL_CACHE[fullKey] = true;
                 }
                 if (def.hasOwnProperty("expired.1")) {
-                    CACHE_POOL["1"].registerExpiredTime([ group, key ], def["expired.1"]);
+                    CACHE_POOL["1"].registerExpiredTime(fullKey, def["expired.1"]);
                 }
                 if (def.hasOwnProperty("expired.2")) {
-                    CACHE_POOL["2"].registerExpiredTime([ group, key ], def["expired.2"]);
+                    CACHE_POOL["2"].registerExpiredTime(fullKey, def["expired.2"]);
                 }
                 if (def.level > 2) {
                     SAVE_LEVEL_MAPPING[fullKey] = String(def.level);
@@ -95,7 +98,9 @@ function syncUpLevelCacheHandler(event) {
     var val = arguments[2];
 
     //console.log("sync cache event ---> " + key, "    originalKey --> ", originalKey);
-    if (!SYNC_UP_LEVEL_CACHE[key]) return;
+    var tempKey = originalKey;
+    if (originalKey instanceof Array) tempKey = originalKey[0];
+    if (!SYNC_UP_LEVEL_CACHE[tempKey]) return;
 
     CACHE_POOL[1].save(originalKey, val);
 }
@@ -116,22 +121,22 @@ exports.cacheRead = function(key) {
 
     var fullKey = key;
     var originalKey = key;
-    if (key instanceof Array) fullKey = key.join("-");
+    var tempKey = key;
+    if (key instanceof Array) {
+        tempKey = key[0];
+    }
 
     if (isNaN(level) || level === 0) {
-        if (typeof key == "string") {
-            level = READ_LEVEL_MAPPING[key];
-        } else {
-            level = READ_LEVEL_MAPPING[fullKey];
-        }
+        level = READ_LEVEL_MAPPING[tempKey];
     }
+
     if (isNaN(level)) level = 1;
 
-    if (level == 1 && SYNC_UP_LEVEL_CACHE[fullKey]) {
+    if (level == 1 && SYNC_UP_LEVEL_CACHE[tempKey]) {
         var c = CACHE_POOL[1].read(originalKey);
         if (c) {
             return new Promise(function (resolve) {
-                if (callBack) return callBack(c);
+                if (callBack) return callBack(null, c);
                 resolve(c);
             });
         } else {
@@ -144,14 +149,14 @@ exports.cacheRead = function(key) {
                     } else {
                         //console.log("update level 1 cache...");
                         CACHE_POOL[1].save(originalKey, c2);
-                        if (callBack) return callBack(c2);
+                        if (callBack) return callBack(null, c2);
                         resolve(c2);
                     }
                 });
             });
         }
     } else {
-        return CACHE_POOL[level].read(key, callBack);
+        return CACHE_POOL[level].read(originalKey, callBack);
     }
 }
 
@@ -162,7 +167,7 @@ exports.cacheSave = function(key, val) {
     if (typeof callBack != "function") callBack = undefined;
 
     if (level === 0) {
-        SYNC_UP_LEVEL_CACHE[key instanceof Array ? key.join("-") : key] = true;
+        SYNC_UP_LEVEL_CACHE[key instanceof Array ? key[0] : key] = true;
         level = 2;
     }
 
@@ -170,7 +175,7 @@ exports.cacheSave = function(key, val) {
         if (typeof key == "string") {
             level = SAVE_LEVEL_MAPPING[key];
         } else {
-            level = SAVE_LEVEL_MAPPING[key.join("-")];
+            level = SAVE_LEVEL_MAPPING[key[0]];
         }
     }
     if (isNaN(level)) level = 1;
@@ -182,9 +187,9 @@ exports.cacheRemove = function(key) {
     var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
     if (typeof callBack != "function") callBack = undefined;
 
-    var fullKey = key;
-    if (key instanceof Array) fullKey = key.join("-");
-    if (SYNC_UP_LEVEL_CACHE[fullKey]) {
+    var tempKey = key;
+    if (key instanceof Array) tempKey = key[0];
+    if (SYNC_UP_LEVEL_CACHE[tempKey]) {
         CACHE_POOL[1].remove(key);
         return CACHE_POOL[2].remove(key, callBack);
     }

@@ -52,7 +52,7 @@ exports.setExpireTime = function(key, val) {
 }
 
 exports.registerExpiredTime = function(key, expired) {
-    if (key instanceof Array) key = key.join("-");
+    if (key instanceof Array) key = key.join(".");
     EXPIRED_MAP[key] = Number(expired);
 }
 
@@ -65,9 +65,13 @@ exports.save = function(key, val) {
 
     return new Promise(function (resolve, reject) {
         var tempKey = key;
+        var firstKey = key;
         var originalKey = key;
         var redisKey = key;
-        if (key instanceof Array) tempKey = key.join("-");
+        if (key instanceof Array) {
+            tempKey = key.join(".");
+            firstKey = key[0];
+        }
         if (tempKey.substr(0, 1) == "@") {
             redisKey = exports.join(tempKey, CACHE_PREFIX);
         } else {
@@ -75,7 +79,7 @@ exports.save = function(key, val) {
         }
         //console.log('save ---> ' + tempKey);
 
-        if (!expired) expired = EXPIRED_MAP[tempKey];
+        if (!expired) expired = EXPIRED_MAP[firstKey];
         var originalVal = val;
         if (typeof val == "object") {
             val = JSON.stringify(val);
@@ -108,7 +112,7 @@ exports.read = function(key, callBack) {
     return new Promise(function (resolve, reject) {
         var tempKey = key;
         var redisKey = key;
-        if (key instanceof Array) tempKey = key.join("-");
+        if (key instanceof Array) tempKey = key.join(".");
         if (tempKey.substr(0, 1) == "@") {
             redisKey = exports.join(tempKey, CACHE_PREFIX);
         } else {
@@ -135,7 +139,7 @@ exports.remove = function(key, callBack) {
     return new Promise(function (resolve, reject) {
         var tempKey = key;
         var redisKey = key;
-        if (key instanceof Array) tempKey = key.join("-");
+        if (key instanceof Array) tempKey = key.join(".");
         if (tempKey.substr(0, 1) == "@") {
             redisKey = exports.join(tempKey, CACHE_PREFIX);
         } else {
