@@ -467,7 +467,8 @@ function DefaultAdapter(server) {
         socket.clientID = (socket.info.session ? socket.info.session.userid : null) || socket.clientID;
         socket.helper.enterRoom(`###${socket.clientID}`, function(err) {
             err && traceError(`enterRoom error after shakehand ---> ${err}`);
-            traceLog(`client *${socket.clientID}* shakehand success`);
+            socket.emit("$init", { time:Date.now(), socketID:socket.id, clientID:socket.clientID });
+            traceLog(`client *${socket.clientID}* shakehand success. clientID: ${socket.clientID}`);
         });
         clearTimeout(instance.shakehandTimeout);
     }
