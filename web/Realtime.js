@@ -441,11 +441,8 @@ function DefaultAdapter(server) {
                 if (callBack) return callBack(false);
                 return resolve(false);
             }
-            socket.helper.enterRoom(`###${socket.clientID}`, function(err) {
-                err && traceError(`enterRoom error after shakehand ---> ${err}`);
-                if (callBack) return callBack(!err && flag);
-                return resolve(err && flag);
-            });
+            if (callBack) return callBack(true);
+            resolve(true);
         });
         /*
         if (this.config.multiConnection) {
@@ -468,8 +465,10 @@ function DefaultAdapter(server) {
 
     this.shakehandSuccess = function(socket) {
         socket.clientID = (socket.info.session ? socket.info.session.userid : null) || socket.clientID;
-        socket.emit("$init", { time:Date.now(), socketID:socket.id, clientID:socket.clientID });
-        traceLog(`client *${socket.clientID}* shakehand success. clientID: ${socket.clientID}`);
+        socket.helper.enterRoom(`###${socket.clientID}`, function(err) {
+            err && traceError(`enterRoom error after shakehand ---> ${err}`);
+            traceLog(`client *${socket.clientID}* shakehand success`);
+        });
         clearTimeout(instance.shakehandTimeout);
     }
 }
