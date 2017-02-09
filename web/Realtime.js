@@ -16,6 +16,40 @@ exports.createServer = function(config, noGlobal) {
     server.registerProducer = function(name, func) {
         this.__producers[name] = func.bind(this);
     };
+    if (config.compress) {
+        var zipData = function(params) {
+            var args = [];
+            for (var i = 0; i < params.length; i++) {
+                args.push(jsonZip(params[i]));
+            }
+            return args;
+        }
+        server.__wrapperDispatcher = function(ns) {
+            ns.fire = function(type) {
+                var args = Array.prototype.slice.call(arguments, 0);
+                type = args[0];
+                args.shift();
+                args = zipData(args);
+                this.emit.apply(this, [ type ].concat(args));
+            }
+        }
+        server.__letItFire = function(ns, type, args) {
+            args = zipData(args);
+            ns.emit.apply(ns, [ type ].concat(args));
+        }
+    } else {
+        server.__wrapperDispatcher = function(ns) {
+            // ns.fire = function(type, data) {
+            //     //this.emit(type, data)
+            //     //console.log(this.constructor)
+            //     this.emit.apply(this, Array.prototype.slice.call(arguments, 0));
+            // }
+            ns.fire = ns.emit.bind(ns);
+        }
+        server.__letItFire = function(ns, type, args) {
+            ns.emit.apply(ns, [ type ].concat(args));
+        }
+    }
 
     var AdpaterClass = config.adpater || DefaultAdapter;
     var adapter = new AdpaterClass(server);
@@ -23,6 +57,9 @@ exports.createServer = function(config, noGlobal) {
     server.on("connection", function(socket) {
 
         var config = server.config;
+
+        server.__wrapperDispatcher(socket);
+        //server.__wrapperDispatcher(socket.broadcast);
 
         //connect
         adapter.connect(socket, function() {
@@ -54,6 +91,7 @@ exports.createServer = function(config, noGlobal) {
     });
 
     server.on("start", function(io) {
+        server.__wrapperDispatcher(server.io);
         adapter.start(io);
     });
     /*
@@ -129,7 +167,7 @@ function DefaultAdapter(server) {
 
     var kick = function(data) {
         var socket = this;
-        socket.emit("$kick", data);
+        socket.fire("$kick", data);
         setTimeout(function() {
             //close connection after few seconds
             try { socket.close(); } catch (exp) { }
@@ -157,24 +195,31 @@ function DefaultAdapter(server) {
         });
     }
 
-    var sendTo = function(clientID, type, data) {
+    var send = function(type, data) {
         var socket = this;
         socket.helper.broadcastToRoom(`###${socket.clientID}`, type, data);
+    }
+
+    var sendTo = function(clientID, type, data) {
+        var socket = this;
+        socket.helper.broadcastToRoom(`###${clientID}`, type, data);
     }
 
     var broadcast = function(type, data) {
         var socket = this;
         var args = Array.prototype.slice.call(arguments, 0);
         if (socket.server) {
-            socket.server.emit.apply(socket.server, args);
+            socket.server.fire.apply(socket.server, args);
         }
     }
 
     var broadcastWithoutSender = function(type, data) {
         var socket = this;
         var args = Array.prototype.slice.call(arguments, 0);
+        type = args[0];
+        args.shift();
         if (socket.broadcast) {
-            socket.broadcast.emit.apply(socket.broadcast, args);
+            server.__letItFire(socket.broadcast, type, args);
         }
     }
 
@@ -183,9 +228,13 @@ function DefaultAdapter(server) {
         var args = Array.prototype.slice.call(arguments, 0);
         room = args[0];
         args.shift();
+        type = args[0];
+        args.shift();
         if (socket.server) {
-            var caller = socket.server.in(room);
-            caller && caller.emit.apply(caller, args);
+            var caller = socket.server.to(room);
+            if (caller) {
+                server.__letItFire(caller, type, args);
+            }
         }
     }
 
@@ -194,9 +243,13 @@ function DefaultAdapter(server) {
         var args = Array.prototype.slice.call(arguments, 0);
         room = args[0];
         args.shift();
+        type = args[0];
+        args.shift();
         if (socket.broadcast) {
             var caller = socket.broadcast.to(room);
-            caller && caller.emit.apply(caller, args);
+            if (caller) {
+                server.__letItFire(caller, type, args);
+            }
         }
     }
 
@@ -231,15 +284,22 @@ function DefaultAdapter(server) {
     }
 
     this.broadcastToRoom = function(room, type, data) {
+        var args = Array.prototype.slice.call(arguments, 0);
+        room = args[0];
+        args.shift();
+        type = args[0];
+        args.shift();
         if (this.server && this.server.io) {
             var caller = this.server.io.in(room);
-            caller && caller.emit(type, data);
+            if (caller) {
+                this.server.__letItFire(caller, type, args);
+            }
         }
     }
 
     this.broadcastToAll = function(type, data) {
         if (this.server && this.server.io) {
-            this.server.io.emit(type, data);
+            this.server.io.fire(type, data);
         }
     }
     /*
@@ -358,6 +418,7 @@ function DefaultAdapter(server) {
     this.connect = function(socket, callBack) {
         socket.clientID = socket.id;
         socket.helper = {};
+        socket.helper.send = send.bind(socket);
         socket.helper.kick = kick.bind(socket);
         socket.helper.sendTo = sendTo.bind(socket);
         socket.helper.enterRoom = enterRoom.bind(socket);
@@ -464,7 +525,7 @@ function DefaultAdapter(server) {
         socket.clientID = (socket.info.session ? socket.info.session.userid : null) || socket.clientID;
         socket.helper.enterRoom(`###${socket.clientID}`, function(err) {
             err && traceError(`enterRoom error after shakehand ---> ${err}`);
-            socket.emit("$init", { time:Date.now(), socketID:socket.id, clientID:socket.clientID });
+            socket.fire("$init", { time:Date.now(), socketID:socket.id, clientID:socket.clientID });
             traceLog(`client *${socket.clientID}* shakehand success. clientID: ${socket.clientID}`);
         });
         clearTimeout(instance.shakehandTimeout);
