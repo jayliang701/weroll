@@ -78,7 +78,7 @@ exports.createServer = function(config, noGlobal) {
                             server.emit("shakeHandSuccess", socket);
                         } else {
                             adapter.shakehandFail(socket);
-                            server.emit("shakehandFail", socket);
+                            server.emit("shakeHandFail", socket);
                         }
                     });
                 });
@@ -378,8 +378,22 @@ function DefaultAdapter(server) {
 
     this.start = function(io) {
         if (this.config.cluster && this.config.cluster.enable) {
+            var redis = require('redis').createClient;
             var opt = cloneObject(this.config.cluster.redis);
-            opt.key = opt.key || "realtime";
+            opt.key = (opt.key || opt.prefix) || "realtime";
+            if (opt["*"]) {
+                var defAll = opt["*"];
+                opt.pubClient = redis(defAll.port, defAll.host, defAll.option);
+                opt.subClient = redis(defAll.port, defAll.host, defAll.option);
+            } else {
+                var def = opt.pub;
+                if (def) opt.pubClient = redis(def.port, def.host, def.option);
+                def = opt.sub;
+                if (def) opt.subClient = redis(def.port, def.host, def.option);
+            }
+            delete opt["*"];
+            delete opt["pub"];
+            delete opt["sub"];
             this.cluster = require('socket.io-redis')(opt);
             io.adapter(this.cluster);
             this.cluster = io.of('/').adapter;

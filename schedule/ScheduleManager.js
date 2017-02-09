@@ -42,9 +42,10 @@ function checkIsInTimeRange(startTime, endTime) {
 }
 
 exports.start = function(option) {
-    setting = option || {};
+    option = option || {};
+    setting = option;
 
-    DEBUG = option.hasOwnProperty("option") ? option.debug : global.VARS.debug;
+    DEBUG = setting.hasOwnProperty("debug") ? setting.debug : global.VARS.debug;
 
     if (!config) {
         config = FS.readFileSync(PATH.join(global.APP_ROOT, "server/config/" + global.VARS.env + "/schedule.json"));
