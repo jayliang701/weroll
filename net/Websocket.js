@@ -22,7 +22,7 @@ var traceInfo = global.WebsocketTraceInfo || function() {
 
 //config -> { server, [port], [adapter] }
 function Websocket(config) {
-    DEBUG = config.debug || (global.VARS ? global.VARS.debug : false);
+    DEBUG = config.hasOwnProperty("debug") ? config.debug : (global.VARS ? global.VARS.debug : false);
     if (!DEBUG) {
         traceLog = function() {};
         traceError = function() {};
