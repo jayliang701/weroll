@@ -299,7 +299,7 @@ socket.helper.sendTo(clientID, event, data);
 <br>
 <br>
 <h4><a name="compress">数据压缩</a></h4>
-默认Realtime不会开启数据压缩, 需要在配置中设定compress: true
+默认Realtime不会开启数据压缩, 需要在配置中设定 <b>compress: true</b>：
 
 ```js
 var config = {
@@ -308,3 +308,44 @@ var config = {
 };
 Realtime.createServer(config).start();
 ```
+
+开启之后, <b>Realtime</b> 会用 <a href="http://msgpack.org/" target="_blank">msgpack</a> 对JSON数据进行压缩, 然后以Buffer形式和客户端通讯. 客户端需要使用msgpack库来进行解压缩， 得到原始的JSON数据。
+
+```html
+/* client side */
+<script type="text/javascript" src="js/msgpack.min.js"></script>
+<script type="text/javascript" src="js/socket.io.min.js"></script>
+<script>
+
+//对数据进行解压处理
+var parseData = function(data) {
+    if (data instanceof ArrayBuffer) data = msgpack.decode(new Uint8Array(data));
+    return data;
+}
+
+var sess = { userid:USER_ID, token:TOKEN, tokentimestamp:TOKEN_TIMESTAMP };
+
+var socket = io("http://localhost:3001");
+socket.on("connect", function() {
+    console.log('connected to ' + url);
+    console.log('start shakehand with session: ', sess);
+    //发送握手请求
+    socket.emit('$init', { _sess:sess });
+});
+//侦听握手请求处理结果
+socket.on("$init", function(data) {
+    //握手成功
+    data = parseData(data);
+    //data = { clientID:客户端连接的UUID }
+    socket.clientID = data.clientID;
+    console.log('shakehand success. clientID: ' + socket.clientID);
+});
+//侦听其他消息
+socket.on("chat", function(data) {
+    data = parseData(data);
+    console.log('chat message: ', data.msg);
+});
+</script>
+```
+
+
