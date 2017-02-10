@@ -10,6 +10,7 @@ parent: guide
     <li><a href="#rt">Realtime</a></li>
     <li><a href="#auth">握手和权限</a></li>
     <li><a href="#how">常见业务场景和示例代码</a></li>
+    <li><a href="#compress">数据压缩</a></li>
 </ul>
 <br>
 <h4><a name="rt">Realtime</a></h4>
@@ -21,17 +22,25 @@ var Realtime = require("weroll/web/Realtime");
 
 /* 创建Realtime实例, 建立Websocket服务 */
 var config = {
-     port: 3001,
-     debug:true,
-     allowGuest:true,
-     shakehand:false,
-     /* shakehandTimeout:5000, */
-     /* enable cluster
-     cluster:{
-         enable:true,
-         redis:{ host:"127.0.0.1", port:6379 }
-     }
-     */
+    port: 3001,
+    debug:true,
+    allowGuest:true,
+    shakehand:false,
+    /* compress:true, */
+    /* shakehandTimeout:5000, */
+    /* enable cluster
+    cluster:{
+        enable:true,
+        redis:{
+            prefix:"WEBSOCKET_PREFIX",
+            "*":{
+                host:"127.0.0.1",
+                port:6379,
+                option: { auth_pass:"redis password" }
+            }
+        }
+    }
+    */
 };
 Realtime.createServer(config).start();
 
@@ -78,14 +87,27 @@ Realtime配置参数详细说明如下:<br>
             <td>设置握手超时时间, 默认是15秒, 意思是如果客户端在连接后超过指定时间没有完成握手, 服务器将自动断开连接</td>
         </tr>
         <tr>
+            <td><b>compress</b></td>
+            <td>是否开启数据压缩, 默认是false. 开启之后, <b>Realtime</b> 会用 <a href="http://msgpack.org/" target="_blank">msgpack</a> 对JSON数据进行压缩, 然后以Buffer形式和客户端通讯.</td>
+        </tr>
+        <tr>
             <td><b>cluster</b></td>
             <td>集群配置:
                 <pre><code class="json">cluster:{
-     enable:true,
-     redis:{ host:"127.0.0.1", port:6379 }
- }</code></pre>
+    enable:true,
+    redis:{
+        prefix:"WEBSOCKET_PREFIX",
+        "*":{
+            host:"127.0.0.1",
+            port:6379,
+            option: { auth_pass:"redis password" }
+        }
+    }
+}</code></pre>
                 enable - 是否开启集群<br>
-                redis - 配置集群连接的Redis服务
+                redis - 配置集群连接的Redis服务<br>
+                redis.prefix - Redis中的键值前缀, 默认是realtime<br>
+                redis.* - Redis服务器连接配置
             </td>
         </tr>
     </tbody>
@@ -274,4 +296,15 @@ socket.helper.broadcastWithoutSender(event, data);
 socket.helper.sendTo(clientID, event, data);
 ```
 
+<br>
+<br>
+<h4><a name="compress">数据压缩</a></h4>
+默认Realtime不会开启数据压缩, 需要在配置中设定compress: true
 
+```js
+var config = {
+    port: 3001,
+    compress:true
+};
+Realtime.createServer(config).start();
+```
