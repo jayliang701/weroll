@@ -11,7 +11,7 @@ function Session() {
 }
 
 Session.prototype.init = function(params) {
-    this.config = params;
+    this.config = params || {};
     this.config.prefix = this.config.prefix || "";
     var ins = this;
     if (this.config.onePointEnter) {

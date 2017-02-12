@@ -1,5 +1,6 @@
 var HTTP = require('http');
 HTTP.globalAgent.maxSockets = Infinity;
+var FS = require('fs');
 var URL = require('url');
 var Async = require('async');
 var ICONV = require('iconv-lite');
@@ -74,6 +75,11 @@ Error.create = function(code, msg) {
         return this.message;
     }
     return err;
+}
+
+FS.mkdirp = function() {
+    var mkdirp = require("mkdirp");
+    mkdirp.apply(null, Array.prototype.slice.call(arguments, 0));
 }
 
 require("console-stamp")(console, "yyyy-mm-dd HH:MM:ss");

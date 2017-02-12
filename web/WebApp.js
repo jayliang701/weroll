@@ -319,7 +319,7 @@ exports.start = function(setting, callBack) {
     }
 
     APP_SETTING = setting;
-    API_SESSION_AUTH_ONLY = APP_SETTING.session.apiCheck == 1;
+    API_SESSION_AUTH_ONLY = APP_SETTING.session && APP_SETTING.session.apiCheck == 1;
 
     var apiCompress = setting.compress ? setting.compress.api : false;
 
@@ -334,7 +334,7 @@ exports.start = function(setting, callBack) {
         payment: setting.payment,
         geo: setting.geo,
         upload: setting.upload,
-        "COOKIE_PATH": setting.session.cookiePath
+        "COOKIE_PATH": setting.session ? (setting.session.cookiePath || "/") : "/"
     };
     WRP.config({ site:setting.site, compress:apiCompress });
 
