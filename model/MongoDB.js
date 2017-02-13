@@ -131,10 +131,11 @@ function find(dbName, target, filter, fields, sort, pagination, callBack) {
     });
 }
 
-function findOne(dbName, target, filter) {
-    var fields = typeof arguments[3] == "object" ? arguments[3] : {};
-    var callBack = typeof arguments[3] == "function" ? arguments[3] : arguments[4];
+function findOne(dbName, target, filter, fields, callBack) {
+    callBack = arguments[arguments.length - 1];
     if (typeof callBack != "function") callBack = null;
+
+    fields = fields && typeof fields == "object" ? fields : null;
 
     return new Promise(function (resolve, reject) {
         var db = getDBByName(dbName);
@@ -195,6 +196,11 @@ function findPage(dbName, target, filter, fields, sort, pagination, callBack) {
 }
 
 function count(dbName, target, filter, callBack) {
+    callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
+
+    filter = filter && typeof filter == "object" ? filter : {};
+
     return new Promise(function (resolve, reject) {
         var db = getDBByName(dbName);
         if (!db) {
@@ -269,6 +275,11 @@ function processUpdateParams(params) {
 }
 
 function update(dbName, target, filter, params, option, callBack) {
+    callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
+
+    option = option && typeof option == "object" ? option : {};
+
     return new Promise(function (resolve, reject) {
         var db = getDBByName(dbName);
         if (!db) {
@@ -292,9 +303,11 @@ function update(dbName, target, filter, params, option, callBack) {
     });
 }
 
-function findOneAndUpdate(dbName, target, filter, params, options) {
-    var callBack = arguments[arguments.length - 1];
+function findOneAndUpdate(dbName, target, filter, params, option, callBack) {
+    callBack = arguments[arguments.length - 1];
     if (typeof callBack != "function") callBack = null;
+
+    option = option && typeof option == "object" ? option : {};
 
     return new Promise(function (resolve, reject) {
         var db = getDBByName(dbName);
@@ -308,12 +321,12 @@ function findOneAndUpdate(dbName, target, filter, params, options) {
 
         var changes = processUpdateParams(params);
 
-        options = options ? JSON.parse(JSON.stringify(options)) : { upsert:false, new:false };
-        options.projection = options.fields;
-        options.returnOriginal = !options.new;
-        delete options["fields"];
+        option = option ? JSON.parse(JSON.stringify(option)) : { upsert:false, new:false };
+        option.projection = option.fields;
+        option.returnOriginal = !option.new;
+        delete option["fields"];
 
-        targetCol.findOneAndUpdate(filter, changes, options,
+        targetCol.findOneAndUpdate(filter, changes, option,
             function(err, result) {
                 if (err) console.error(target + ".findOneAndUpdate failed ==> " + err);
                 var doc = null;
