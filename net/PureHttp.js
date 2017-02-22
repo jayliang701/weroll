@@ -47,12 +47,16 @@ function Server() {
         if (index > 0) url = url.substring(0, index);
 
         var handlerMap = instance.__handlers[req.method];
-        var handler = handlerMap[url];
-        if (!handlerMap || !handler) {
-            res.writeHead(404);
-            res.end();
-            return;
+        var handler;
+        if (!handlerMap || !handlerMap[url]) {
+            handlerMap = instance.__handlers["ALL"];
+            if (!handlerMap || !handlerMap[url]) {
+                res.writeHead(404);
+                res.end();
+                return;
+            }
         }
+        handler = handlerMap[url];
 
         instance.__middleware.preprocess(req, res);
 
@@ -285,6 +289,7 @@ function JsonAPIMiddleware() {
             return;
         }
 
+        req.body = params;
         handler(req, res, params);
     }
 }

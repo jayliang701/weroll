@@ -11,7 +11,10 @@ var FS = require("fs");
 var CODES = require("../ErrorCodes");
 
 var Utils = require("../utils/Utils");
+var Model = require("../model/Model");
 var Redis = require("../model/Redis");
+
+var mongooseInstance;
 
 var defs = {};
 
@@ -19,7 +22,16 @@ var doRegisterSchema = function(path, file) {
     var fullPath = PATH.join(path, file);
     var isMongooseSchema = file.indexOf("Schema.js") > 0;
     var name = file.replace("Schema.js", "").replace("DAO.js", "");
-    defs[name] = { isMongooseSchema:isMongooseSchema, ref:require(fullPath) };
+    var module = require(fullPath);
+    if (isMongooseSchema) {
+        defs[name] = module();
+    } else {
+        defs[name] = {
+            name: name,
+            ref: module
+        };
+    }
+    defs[name].isNotMongooseSchema = !isMongooseSchema;
 }
 
 var checkFolder = function(path, handler) {
@@ -37,69 +49,25 @@ var checkFolder = function(path, handler) {
 exports.Schema = Schema;
 
 exports.init = function(owner) {
+    owner = owner || Model.getDBByName();
+    mongooseInstance = owner;
     var option = typeof arguments[1] == "function" ? {} : arguments[1];
     var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
     if (typeof callBack != "function") callBack = null;
 
     var q = [];
-    var incrIDHash;
 
     //init routers
     checkFolder(option.folder || PATH.join(global.APP_ROOT, "server/dao"), doRegisterSchema);
 
     for (var key in defs) {
-        if (defs[key].isMongooseSchema) {
-            var scDef = defs[key].ref();
-            var list = [];
-            if (!scDef.hasOwnProperty("length")) {
-                list.push(scDef);
-            } else {
-                list = list.concat(scDef);
-            }
-            list.forEach(function(def) {
-                inject(def.ref);
-                var model = owner.model(def.name, def.ref);
-                def.ref.$ModelClass = model;
-                def.ref.$Factory = exports;
-                def.ref.$CollectionName = def.name;
-                exports[def.name] = model;
-
-                global.__defineGetter__(def.name, function() {
-                    return model;
+        (function(key) {
+            q.push(function (cb) {
+                exports.registerSchema(defs[key], function (err) {
+                    cb(err);
                 });
-
-                if (def.hasOwnProperty("firstUUID") && def.firstUUID > 0) {
-                    if (!incrIDHash) {
-                        q.push(function(cb) {
-                            Redis.getHashAll("incremental_id", function(err, hash) {
-                                incrIDHash = hash || {};
-                                cb(err);
-                            });
-                        });
-                    }
-                    q.push(function(cb) {
-                        //return cb();
-                        var current = Number(incrIDHash[def.name]) || 0;
-                        if (current >= def.firstUUID) return cb();
-                        var redisTasks = [];
-                        redisTasks.push([ "HDEL", Redis.join("incremental_id"), def.name ]);
-                        redisTasks.push([ "HINCRBY", Redis.join("incremental_id"), def.name, Number(def.firstUUID) ]);
-                        Redis.multi(redisTasks, function(err) {
-                            if (err) console.error(`init *${def.name}* incremental id error: ${err}`);
-                            cb(err);
-                        });
-                    });
-                }
             });
-
-        } else {
-            (function(prop) {
-                var dao = defs[prop].ref;
-                global.__defineGetter__(prop, function() {
-                    return dao;
-                });
-            })(key);
-        }
+        })(key);
     }
 
     runAsQueue(q, function(err) {
@@ -109,6 +77,10 @@ exports.init = function(owner) {
 
 function inject(schema) {
     schema.static("getByID", function(id, fields, callBack) {
+        callBack = arguments[arguments.length - 1];
+        if (typeof callBack != "function") callBack = null;
+        fields = typeof fields == "object" || typeof fields == "string" ? fields : null;
+
         var ins = this;
         return new Promise(function(resolve, reject) {
             ins.findOne({ _id:id }, fields, function (err, doc) {
@@ -140,6 +112,10 @@ function inject(schema) {
     });
 
     schema.static("findAll", function(filter, fields, callBack) {
+        callBack = arguments[arguments.length - 1];
+        if (typeof callBack != "function") callBack = null;
+        fields = typeof fields == "object" || typeof fields == "string" ? fields : null;
+
         var ins = this;
         return new Promise(function (resolve, reject) {
             var PAGE_SIZE = 1000;
@@ -261,4 +237,63 @@ exports.create = function(name) {
         }
     }
     return ins;
+}
+
+exports.registerSchema = function(defination, callBack) {
+    var owner = mongooseInstance;
+    var q = [];
+
+    var key = defination.name;
+
+    var list = [];
+    if (defination instanceof Array) {
+        list = list.concat(defination);
+    } else {
+        list.push(defination);
+    }
+
+    list.forEach(function(def) {
+        if (!def.isNotMongooseSchema) {
+            inject(def.ref);
+            var model = owner.model(def.name, def.ref);
+            def.ref.$ModelClass = model;
+            def.ref.$Factory = exports;
+            def.ref.$CollectionName = def.name;
+            exports[def.name] = model;
+
+            global.__defineGetter__(def.name, function() {
+                return model;
+            });
+
+            if (def.hasOwnProperty("firstUUID") && def.firstUUID > 0) {
+                q.push(function(cb) {
+                    Redis.getHash("incremental_id", def.name, function(err, currentUUID) {
+                        cb(currentUUID, err);
+                    });
+                });
+                q.push(function(current, cb) {
+                    //return cb();
+                    current = Number(current) || 0;
+                    if (current >= def.firstUUID) return cb();
+                    var redisTasks = [];
+                    redisTasks.push([ "HDEL", Redis.join("incremental_id"), def.name ]);
+                    redisTasks.push([ "HINCRBY", Redis.join("incremental_id"), def.name, Number(def.firstUUID) ]);
+                    Redis.multi(redisTasks, function(err) {
+                        if (err) console.error(`init *${def.name}* incremental id error: ${err}`);
+                        cb(err);
+                    });
+                });
+            }
+
+        } else {
+            var dao = def.ref;
+            global.__defineGetter__(def.name, function() {
+                return dao;
+            });
+        }
+    });
+
+    runAsQueue(q, function (err) {
+        callBack && callBack(err);
+    });
 }
