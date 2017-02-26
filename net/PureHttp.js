@@ -177,15 +177,18 @@ function JsonAPIMiddleware() {
 
         var fail = function () {
             var err = arguments[0];
-            var code = 0;
+            var code = 101;
             var msg = "error";
             if (arguments.length > 1) {
-                code = Number(arguments[0]);
+                code = Number(err);
                 msg = arguments[1] ? arguments[1].toString() : "unknown";
             } else {
-                if (err.hasOwnProperty("code")) {
-                    code = err.code;
-                    msg = err.msg;
+                if (err instanceof Array) {
+                    code = err[0];
+                    msg = err[1];
+                } else if (typeof err == "object" || err instanceof Error) {
+                    code = err.code || 101;
+                    msg = err.message || err.toString();
                 } else {
                     msg = err.toString();
                 }

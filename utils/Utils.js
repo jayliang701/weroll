@@ -131,12 +131,18 @@ exports.md5 = function(str) {
     return hash.update(str).digest("hex");
 }
 
-exports.rsa = function(privateKey, plain) {
+exports.rsa = function(privateKey, plain, option) {
+    option = option || {};
     var buf = new Buffer(plain);
     plain = buf.toString("binary");
 
-    var sign = Crypto.createSign('RSA-SHA1');
+    var method = option.method || 'RSA-SHA1';
+    var sign = Crypto.createSign(method);
     sign.update(plain);
+
+    if (privateKey.indexOf("-----BEGIN RSA PRIVATE KEY-----") != 0) {
+        privateKey = '-----BEGIN RSA PRIVATE KEY-----\n' + privateKey.trim() + '\n-----END RSA PRIVATE KEY-----';
+    }
 
     return sign.sign(privateKey, 'base64');
 }

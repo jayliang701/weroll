@@ -233,34 +233,25 @@ exports.broadcast = function(event, data, callBack) {
 }
 
 exports.fire = function(target, event, data, callBack) {
-    return new Promise(function (resolve, reject) {
-        //var startTime = Date.now();
-        var address = Setting.ecosystem.servers[target]["message"];
-        //if (DEBUG) console.log("[Ecosystem] *" + Setting.ecosystem.name + "* fire message to *" + target + "@" + address + "* --> " + event + " : " + (data ? JSON.stringify(data) : {}));
-
-        exports.__fire(address, event, data, function(err, body) {
-            if (callBack) return callBack(err, body);
-            err ? reject(err) : resolve(body);
-        });
-    });
+    var address = Setting.ecosystem.servers[target]["message"];
+    return exports.__fire(address, event, datacallBack);
 }
 
 exports.__fire = function(target, event, data, callBack) {
-    request(target + "/message",
-        {
-            headers: {
-                'Content-Type': 'application/json'
+    return new Promise(function (resolve, reject) {
+        request(target + "/message",
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                method: "POST",
+                body: { event:event, data:data, client:Setting.ecosystem.name }
             },
-            method: "POST",
-            body: { event:event, data:data, client:Setting.ecosystem.name }
-        },
-        function(err, res, body) {
-            if (!callBack) return;
-            //var costTime = Date.now() - startTime;
-            //console.log('cost time: ' + costTime + 'ms');
-            if (err) {
-                callBack(err);
-            } else {
+            function(err, res, body) {
+                if (err) {
+                    if (callBack) return callBack(err);
+                    return reject(err);
+                }
                 if (typeof body == "string") {
                     try {
                         body = JSON.parse(body);
@@ -269,9 +260,14 @@ exports.__fire = function(target, event, data, callBack) {
                         body = null;
                     }
                 }
-                callBack(err, body);
-            }
-        });
+                if (err) {
+                    if (callBack) return callBack(err, body);
+                    return reject(err);
+                }
+                if (callBack) return callBack(null, body);
+                return resolve(body);
+            });
+    });
 }
 
 exports.listen = function(target, event, handler) {

@@ -73,4 +73,5 @@ function useTemplate(group, key, args) {
     return { title:title, content:content };
 }
 
+exports.use = useTemplate;
 exports.useTemplate = useTemplate;
