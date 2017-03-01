@@ -131,20 +131,26 @@ exports.md5 = function(str) {
     return hash.update(str).digest("hex");
 }
 
-exports.rsa = function(privateKey, plain, option) {
+exports.rsa = function(key, plain, option) {
     option = option || {};
-    var buf = new Buffer(plain);
+    var buf = null;
+    if (plain instanceof Buffer) {
+        buf = plain;
+    } else {
+        buf = new Buffer(plain);
+    }
     plain = buf.toString("binary");
 
     var method = option.method || 'RSA-SHA1';
     var sign = Crypto.createSign(method);
     sign.update(plain);
 
-    if (privateKey.indexOf("-----BEGIN RSA PRIVATE KEY-----") != 0) {
-        privateKey = '-----BEGIN RSA PRIVATE KEY-----\n' + privateKey.trim() + '\n-----END RSA PRIVATE KEY-----';
+    if (key.indexOf("-----BEGIN") != 0) {
+        var TYPE = option.type || "RSA PRIVATE KEY";
+        key = `-----BEGIN ${TYPE}-----\n${key.trim()}\n-----END ${TYPE}-----`;
     }
 
-    return sign.sign(privateKey, 'base64');
+    return sign.sign(key, 'base64');
 }
 
 exports.aesEncode = function(plainText, key, iv, encoding) {
@@ -524,6 +530,15 @@ exports.getFromUrl = function(url) {
         }, option.timeout * 1000);
     }
     return req;
+}
+
+exports.dec2hex = function(i) {
+    var result = "0000";
+    if      (i >= 0    && i <= 15)    { result = "000" + i.toString(16); }
+    else if (i >= 16   && i <= 255)   { result = "00"  + i.toString(16); }
+    else if (i >= 256  && i <= 4095)  { result = "0"   + i.toString(16); }
+    else if (i >= 4096 && i <= 65535) { result =         i.toString(16); }
+    return result
 }
 
 exports.html_encode = function(str) {
