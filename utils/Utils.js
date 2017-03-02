@@ -153,6 +153,28 @@ exports.rsa = function(key, plain, option) {
     return sign.sign(key, 'base64');
 }
 
+exports.rsaVerify = function(key, plain, signature, option) {
+    option = option || {};
+    var buf = null;
+    if (plain instanceof Buffer) {
+        buf = plain;
+    } else {
+        buf = new Buffer(plain);
+    }
+    plain = buf.toString("binary");
+
+    var method = option.method || 'RSA-SHA1';
+    var sign = Crypto.createVerify(method);
+    sign.update(plain);
+
+    if (key.indexOf("-----BEGIN") != 0) {
+        var TYPE = option.type || "PUBLIC KEY";
+        key = `-----BEGIN ${TYPE}-----\n${key.trim()}\n-----END ${TYPE}-----`;
+    }
+
+    return sign.verify(key, signature, 'base64');
+}
+
 exports.aesEncode = function(plainText, key, iv, encoding) {
     iv = iv ? iv : new Buffer('0000000000000000');
     encoding = encoding ? encoding : 'utf8';
