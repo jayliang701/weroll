@@ -34,6 +34,16 @@ function CustomMiddleware(options) {
         };
     }
 
+    if (options.cors && options.cors.enable) {
+        jam.processCORS = function(req, res) {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Allow-Credentials", true);
+            res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Authorization, Accept, X-Requested-With");
+            res.setHeader('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
+            return true;
+        }
+    }
+
     function profiling(req) { }
     if (PROFILING) {
 
@@ -333,7 +343,8 @@ function APIServer() {
 
         server.middleware(new CustomMiddleware({
             compress:setting.compress ? setting.compress.api : false,
-            profiling:setting.profiling
+            profiling:setting.profiling,
+            cors:setting.cors || { enable:false }
         }));
 
         if (setting.session && typeof setting.session == "object") {

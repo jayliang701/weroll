@@ -234,7 +234,7 @@ exports.broadcast = function(event, data, callBack) {
 
 exports.fire = function(target, event, data, callBack) {
     var address = Setting.ecosystem.servers[target]["message"];
-    return exports.__fire(address, event, datacallBack);
+    return exports.__fire(address, event, data, callBack);
 }
 
 exports.__fire = function(target, event, data, callBack) {
