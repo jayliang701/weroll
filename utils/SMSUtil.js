@@ -92,15 +92,10 @@ function sendWithTemplate(phone, templateKey, params) {
     var callBack = typeof arguments[3] == "function" ? arguments[3] : arguments[4];
     if (typeof callBack != "function") callBack = null;
 
-    return new Promise(function(resolve, reject) {
-        var tpl = TemplateLib.useTemplate("sms", templateKey, params);
-        var msg = tpl.content;
-        send(phone, msg, option, function(err) {
-            if (callBack) return callBack(err);
-            err ? reject(err) : resolve();
-        });
+    var tpl = TemplateLib.useTemplate("sms", templateKey, params);
+    var msg = tpl.content;
 
-    });
+    return send(phone, msg, option, callBack);
 };
 
 function checkIsAllowToSend(phone, callBack) {
@@ -162,17 +157,23 @@ proxy.send = function(phone, msg) {
 
     if (DEBUG) console.log("SMS ready to send ==> " + url);
 
-    Request(url, { method: "POST", body: {} }, function(err, res, body) {
-        if (DEBUG) console.log("sent a SMS to phone: " + phone + "    response: " + body);
-        if (err) {
-            callBack(err);
-        } else {
-            if (Number(body) > 0) {
-                callBack();
+    return new Promise(function (resolve, reject) {
+        Request(url, { method: "POST", body: {} }, function(err, res, body) {
+            if (DEBUG) console.log("sent a SMS to phone: " + phone + "    response: " + body);
+            if (err) {
+                if (callBack) return callBack(err);
+                reject(err);
             } else {
-                callBack(new Error("SMS agent error. " + body));
+                if (Number(body) > 0) {
+                    if (callBack) return callBack();
+                    resolve();
+                } else {
+                    err = new Error("SMS agent error. " + body);
+                    if (callBack) return callBack(err);
+                    reject(err);
+                }
             }
-        }
+        });
     });
 }
 

@@ -115,7 +115,7 @@ function ValidationCode(setting) {
                     if (callBack) return callBack(null, redisErr);
                     return reject(redisErr);
                 }
-                DEBUG && console.log("Sent phone validation code --> " + phone + ": " + code + " [" + type + "]");
+                DEBUG && console.log("generate validation code --> " + key + " >>> " + code);
                 if (callBack) return callBack(null, code);
                 return resolve(code);
             }, option.expire || DEFAULT_EXPIRE);
