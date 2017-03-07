@@ -87,7 +87,7 @@ function Server() {
         var ip = options.ip || "127.0.0.1";
 
         this.__worker.listen(port, ip, function() {
-            if (callBack) callBack(instance, this.__worker);
+            if (callBack) callBack(instance, instance.__worker);
         });
 
         if (DEBUG) console.log("http server is running on port: " + port);
