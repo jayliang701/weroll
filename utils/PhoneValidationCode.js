@@ -40,6 +40,11 @@ exports.send = function(phone, type, option, callBack) {
 
     return new Promise(function(resolve, reject) {
         vcode.generate(phone + "_" + type, option, function(err, code) {
+            if (err) {
+                if (callBack) return callBack(err);
+                return reject(err);
+            }
+
             var params = option.params || {};
             params.code = code;
             SMSUtil.sendWithTemplate(phone, option.template || "validation", params, option, function(err) {
