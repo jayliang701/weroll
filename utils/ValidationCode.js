@@ -21,7 +21,7 @@ function ValidationCode(setting) {
     var DEFAULT_CODE_LEN = 6;
     var DEFAULT_PATTERN = [ [ 48, 57 ] ];   //0-9
     var DEFAULT_EXPIRE = 15 * 60;     //15 min
-    var config = {};
+    var config = ValidationCode.config || {};
     var DEBUG = global.VARS.debug;
     var SIMULATION = false;
 
@@ -150,6 +150,10 @@ function ValidationCode(setting) {
 
     this.DEBUG = DEBUG;
     this.SIMULATION = SIMULATION;
+}
+
+ValidationCode.globalConfig = function(option) {
+    ValidationCode.config = option || {};
 }
 
 module.exports = ValidationCode;
