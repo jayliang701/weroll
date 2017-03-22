@@ -64,7 +64,16 @@ exports.createServer = function(config, noGlobal) {
         //connect
         adapter.connect(socket, function() {
             //shakehand
-            config.shakehand != false && socket.on("$init", function(data) {
+            if (!config.shakehand) {
+                process.nextTick(function() {
+                    server.emit("shakeHandStart", socket);
+                    process.nextTick(function() {
+                        server.emit("shakeHandSuccess", socket);
+                    });
+                });
+                return;
+            }
+            socket.on("$init", function(data) {
                 clearTimeout(socket.initTimer);
                 socket.initTimer = undefined;
 
