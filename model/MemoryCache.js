@@ -6,6 +6,8 @@ var UTIL = require('util');
 
 var EXPIRED_MAP = {};
 
+var SEP = ".";
+
 exports.registerExpiredTime = function(key, expired) {
     if (key instanceof Array) key = key.join(".");
     EXPIRED_MAP[key] = Number(expired);
@@ -52,4 +54,12 @@ exports.setExpireTime = function(key, time) {
         return;
     }
     CACHE.put(key, val, time * 1000);
+}
+
+exports.init = function (option, callBack) {
+    option = option || {};
+    if (option.group_sep) SEP = option.group_sep;
+    process.nextTick(function() {
+        callBack && callBack();
+    });
 }

@@ -20,7 +20,7 @@ exports.createServer = function(config, noGlobal) {
         var zipData = function(params) {
             var args = [];
             for (var i = 0; i < params.length; i++) {
-                args.push(jsonZip(params[i]));
+                args.push(jsonZip(params[i] || {}));
             }
             return args;
         }

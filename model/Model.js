@@ -76,11 +76,15 @@ exports.init = function(option, callBack) {
     }
     if (option.redis) {
         q.push(function(cb) {
+            if (option.cache) option.redis.cache = option.cache;
             redis.start(option.redis, function(err) {
                 cb(err);
             });
         });
     }
+    q.push(function(cb) {
+        memory.init(option.cache || {}, cb);
+    });
     Utils.runQueueTask(q, function(err) {
         callBack && callBack(err);
     });
