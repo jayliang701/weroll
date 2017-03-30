@@ -54,7 +54,7 @@ App.prototype.run = function(callBack) {
             return;
         }
         if (err) {
-            console.error(":( Server startup fail :( ==> " + err);
+            console.error(":( Server startup fail :( ==> ", err);
         } else {
             console.log("(づ￣ 3￣)づ Server startup successfully. [env: " + global.VARS.env + "]");
         }

@@ -268,7 +268,7 @@ exports.registerSchema = function(defination, callBack) {
             if (def.hasOwnProperty("firstUUID") && def.firstUUID > 0) {
                 q.push(function(cb) {
                     Redis.getHash("incremental_id", def.name, function(err, currentUUID) {
-                        cb(currentUUID, err);
+                        cb(err, currentUUID);
                     });
                 });
                 q.push(function(current, cb) {
