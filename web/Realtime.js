@@ -262,6 +262,19 @@ function DefaultAdapter(server) {
         }
     }
 
+    var getConnectionsByClientID = function(clientID) {
+        var socket = this;
+        var sockets;
+        try {
+            sockets = server.io.sockets.adapter.rooms[`###${clientID}`].sockets;
+            //server.traceLog('clients in room: ', sockets);
+        } catch (exp) {
+            //server.traceLog('no such room...');
+            sockets = {};
+        }
+        return sockets;
+    }
+
     this.invoke = function(method, args, callBack) {
         var ins = this;
         return new Promise(function (resolve, reject) {
@@ -450,6 +463,7 @@ function DefaultAdapter(server) {
         socket.helper.broadcastWithoutSender = broadcastWithoutSender.bind(socket);
         socket.helper.broadcastToRoom = broadcastToRoom.bind(socket);
         socket.helper.broadcastToRoomWithoutSender = broadcastToRoomWithoutSender.bind(socket);
+        socket.helper.getConnectionsByClientID = getConnectionsByClientID.bind(socket);
 
         socket.on("m", function (data) {
             server.traceLog(`get message from client *${socket.id}* : ${JSON.stringify(data)}`);
