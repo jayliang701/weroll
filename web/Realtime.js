@@ -119,6 +119,14 @@ exports.createServer = function(config, noGlobal) {
         return socket ? socket.clientID : null;
     };
 
+    server.getSocketInstanceBySocketID = function(socketID) {
+        return adapter.getSocketInstanceBySocketID(socketID);
+    };
+
+    server.getConnectionsByClientID = function(clientID, needSocketInstance) {
+        return adapter.getConnectionsByClientID(clientID, needSocketInstance);
+    };
+
     server.sendTo = function(clientID, type, data) {
         adapter.sendTo(clientID, type, data);
     };
@@ -262,19 +270,6 @@ function DefaultAdapter(server) {
         }
     }
 
-    var getConnectionsByClientID = function(clientID) {
-        var socket = this;
-        var sockets;
-        try {
-            sockets = server.io.sockets.adapter.rooms[`###${clientID}`].sockets;
-            //server.traceLog('clients in room: ', sockets);
-        } catch (exp) {
-            //server.traceLog('no such room...');
-            sockets = {};
-        }
-        return sockets;
-    }
-
     this.invoke = function(method, args, callBack) {
         var ins = this;
         return new Promise(function (resolve, reject) {
@@ -323,6 +318,35 @@ function DefaultAdapter(server) {
         if (this.server && this.server.io) {
             this.server.io.fire(type, data);
         }
+    }
+
+    this.getSocketInstanceBySocketID = function(socketID) {
+        try {
+            return this.server.io.sockets.connected[socketID];
+        } catch (err) {
+            return null;
+        }
+    }
+
+    this.getConnectionsByClientID = function(clientID, needSocketInstance) {
+        var sockets;
+        try {
+            var ins = this;
+            sockets = ins.server.io.sockets.adapter.rooms[`###${clientID}`].sockets;
+            if (needSocketInstance) {
+                var conns = {};
+                _.map(sockets, function(socketID) {
+                    conns[socketID] = ins.server.io.sockets.connected[socketID];
+                });
+                sockets = conns;
+            }
+            //server.traceLog('clients in room: ', sockets);
+        } catch (exp) {
+            console.error(exp);
+            //server.traceLog('no such room...');
+            sockets = {};
+        }
+        return sockets;
     }
     /*
     this.getClientsInRoom = function(room, callBack, mapFunc) {
@@ -463,7 +487,6 @@ function DefaultAdapter(server) {
         socket.helper.broadcastWithoutSender = broadcastWithoutSender.bind(socket);
         socket.helper.broadcastToRoom = broadcastToRoom.bind(socket);
         socket.helper.broadcastToRoomWithoutSender = broadcastToRoomWithoutSender.bind(socket);
-        socket.helper.getConnectionsByClientID = getConnectionsByClientID.bind(socket);
 
         socket.on("m", function (data) {
             server.traceLog(`get message from client *${socket.id}* : ${JSON.stringify(data)}`);

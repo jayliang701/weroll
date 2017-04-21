@@ -103,6 +103,13 @@ if (!Array.prototype.shuffle) {
     };
 }
 
+exports.modules = {
+    request: require('request'),
+    min_request: require('min-request'),
+    iconv: require('iconv-lite'),
+    bufferhelper: require('bufferhelper')
+};
+
 exports.sleep = function(time) {
     return new Promise(function (resolve) {
         setTimeout(function() {
@@ -234,6 +241,43 @@ exports.randomNumber = function(len) {
         pwd += c;
     }
     return pwd;
+}
+
+exports.stringifySignParams = function(params, option) {
+    option = option || {};
+
+    if (!(params instanceof Array)) {
+        var arr = [];
+        _.map(params, function (val, key) {
+            arr.push([ key, val ]);
+        });
+        params = arr;
+    }
+
+    params = _.sortBy(params, "0");
+
+    var signSource = "";
+    for (var i = 0; i < params.length; i++) {
+        var key = params[i][0];
+        var val = params[i][1];
+        if (!String(val).hasValue()) continue;
+        if (option.encode || option.encodeComponent) {
+            if (typeof val == "string") {
+                if (option.encodeComponent) {
+                    val = encodeURIComponent(val);
+                } else {
+                    if (String(val).substr(0, 8).toLowerCase().indexOf("http://") == 0) {
+                        val = encodeURI(val);
+                    } else {
+                        val = encodeURIComponent(val);
+                    }
+                }
+            }
+        }
+        option.map && option.map(key, val);
+        signSource += `${key}=${val}` + "&";
+    }
+    return signSource.substr(0, signSource.length - 1);
 }
 
 exports.getFunctionParameterName = function(func) {
