@@ -1,6 +1,6 @@
 {
   "name": "weroll",
-  "version": "1.0.44",
+  "version": "1.0.46",
   "description": "Build Your Web Application Fast and Less Codes.",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,7 @@
     "url": "https://github.com/jayliang701/weroll/issues"
   },
   "dependencies": {
-    "async": "^2.1.4",
+    "async": "<=2.2.0",
     "body-parser": "^1.15.2",
     "bufferhelper": "^0.2.1",
     "console-stamp": "^0.2.5",

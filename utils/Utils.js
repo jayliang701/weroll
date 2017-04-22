@@ -130,9 +130,12 @@ exports.cloneObject = function(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
 
-exports.md5 = function(str) {
-    var buf = new Buffer(str);
-    str = buf.toString("binary");
+exports.md5 = function(str, option) {
+    option = option || {};
+    if (!option.asString) {
+        var buf = new Buffer(str);
+        str = buf.toString("binary");
+    }
 
     var hash = Crypto.createHash("md5");
     return hash.update(str).digest("hex");
@@ -140,13 +143,15 @@ exports.md5 = function(str) {
 
 exports.rsa = function(key, plain, option) {
     option = option || {};
-    var buf = null;
-    if (plain instanceof Buffer) {
-        buf = plain;
-    } else {
-        buf = new Buffer(plain);
+    if (!option.asString) {
+        var buf = null;
+        if (plain instanceof Buffer) {
+            buf = plain;
+        } else {
+            buf = new Buffer(plain);
+        }
+        plain = buf.toString("binary");
     }
-    plain = buf.toString("binary");
 
     var method = option.method || 'RSA-SHA1';
     var sign = Crypto.createSign(method);
@@ -162,13 +167,15 @@ exports.rsa = function(key, plain, option) {
 
 exports.rsaVerify = function(key, plain, signature, option) {
     option = option || {};
-    var buf = null;
-    if (plain instanceof Buffer) {
-        buf = plain;
-    } else {
-        buf = new Buffer(plain);
+    if (!option.asString) {
+        var buf = null;
+        if (plain instanceof Buffer) {
+            buf = plain;
+        } else {
+            buf = new Buffer(plain);
+        }
+        plain = buf.toString("binary");
     }
-    plain = buf.toString("binary");
 
     var method = option.method || 'RSA-SHA1';
     var sign = Crypto.createVerify(method);
