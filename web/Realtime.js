@@ -342,7 +342,7 @@ function DefaultAdapter(server) {
             }
             //server.traceLog('clients in room: ', sockets);
         } catch (exp) {
-            console.error(exp);
+            //console.error(exp);
             //server.traceLog('no such room...');
             sockets = {};
         }

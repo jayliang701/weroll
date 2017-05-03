@@ -52,14 +52,20 @@ global.__defineGetter__('iconv', function() {
     return ICONV;
 });
 
-global.__defineGetter__('changeEncoding', function(src, encoding) {
-    return ICONV.encode(new Buffer(src), encoding || "utf-8");
+global.__defineGetter__('changeEncoding', function() {
+    return function(src, srcEncoding, toEncoding) {
+        return ICONV.decode(ICONV.encode(new Buffer(src), srcEncoding), toEncoding);
+    }
 });
 
 global.__defineGetter__('cloneObject', function() {
     return function(obj) {
         return JSON.parse(JSON.stringify(obj));
     };
+});
+
+global.__defineGetter__('mergeObject', function() {
+    return exports.mergeObject;
 });
 
 global.__defineGetter__('sleep', function() {
@@ -612,6 +618,19 @@ exports.dec2hex = function(i) {
     else if (i >= 256  && i <= 4095)  { result = "0"   + i.toString(16); }
     else if (i >= 4096 && i <= 65535) { result =         i.toString(16); }
     return result
+}
+
+exports.mergeObject = function(obj1, obj2, needClone) {
+    if (!obj1) return needClone ? cloneObject(obj2) : obj2;
+    if (!obj2) return needClone ? cloneObject(obj1) : obj1;
+    if (needClone) {
+        obj1 = cloneObject(obj1);
+        obj2 = cloneObject(obj2);
+    }
+    for (var key in obj2) {
+        obj1[key] = obj2[key];
+    }
+    return obj1;
 }
 
 exports.html_encode = function(str) {
