@@ -497,7 +497,8 @@ function DefaultAdapter(server) {
 
             if (server.config.shakehand != false) {
                 traceLog(`waiting client *${socket.clientID}* ${server.config.shakehandTimeout / 1000} seconds to shakehand...`);
-                instance.shakehandTimeout = setTimeout(function() {
+                socket.shakehandTimeout = setTimeout(function() {
+                    traceLog(`client *${socket.clientID}* shakehand timeout...`);
                     instance.shakehandFail(socket);
                 }, server.config.shakehandTimeout || 15000);
             } else {
@@ -575,8 +576,9 @@ function DefaultAdapter(server) {
     }
 
     this.shakehandFail = function(socket) {
+        //traceLog(`client *${socket.clientID}* shakehand timer check ----> ${socket.shakehandTimeout}`);
         traceLog(`client *${socket.clientID}* shakehand failed`);
-        clearTimeout(instance.shakehandTimeout);
+        clearTimeout(socket.shakehandTimeout);
         try { socket.close(); } catch (exp) { }
         try { socket.disconnect(); } catch (exp) { }
     }
@@ -588,7 +590,10 @@ function DefaultAdapter(server) {
             socket.fire("$init", { time:Date.now(), socketID:socket.id, clientID:socket.clientID });
             traceLog(`client *${socket.clientID}* shakehand success. clientID: ${socket.clientID}`);
         });
-        clearTimeout(instance.shakehandTimeout);
+        //traceLog(`client *${socket.clientID}* shakehand timer before clear ----> ${socket.shakehandTimeout}`);
+        clearTimeout(socket.shakehandTimeout);
+        socket.shakehandTimeout = undefined;
+        //traceLog(`client *${socket.clientID}* shakehand timer after clear ----> ${socket.shakehandTimeout}`);
     }
 }
 
