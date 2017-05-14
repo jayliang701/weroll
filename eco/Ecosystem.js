@@ -220,6 +220,15 @@ exports.init = function(config, customSetting, callBack) {
             var client = message[0];
             var event = message[1];
             var data = message[2];
+            var onlyTargets = message[3];
+
+            if (onlyTargets != null && onlyTargets != undefined && onlyTargets != "") {
+                if (typeof onlyTargets == "string") onlyTargets = [ onlyTargets ];
+                if (onlyTargets.indexOf(Setting.ecosystem.name) < 0) {
+                    //ignore
+                    return;
+                }
+            }
 
             var list = server_notifyHandlers[client + "@" + event];
             if (list && list.length > 0) {
@@ -248,12 +257,19 @@ exports.init = function(config, customSetting, callBack) {
     });
 }
 
-exports.broadcast = function(event, data, callBack) {
+exports.broadcast = function(event, data, onlyTargets, callBack) {
+
+    callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
+
+    onlyTargets = typeof onlyTargets == "function" ? "" : onlyTargets;
+    if (!onlyTargets) onlyTargets = "";
+
     if (event.indexOf("@") > 0) {
         event = event.split("@");
         event = event[1];
     }
-    return exports.__fireToAll(event, data, callBack);
+    return exports.__fireToAll(event, data, onlyTargets, callBack);
 }
 
 exports.fire = function(target, event, data, callBack) {
@@ -294,10 +310,10 @@ exports.__fire = function(target, event, data, callBack) {
     });
 }
 
-exports.__fireToAll = function(event, data, callBack) {
+exports.__fireToAll = function(event, data, onlyTargets, callBack) {
     return new Promise(function (resolve, reject) {
         if (!redisPub) return;
-        redisPub.publish("notify", JSON.stringify([ Setting.ecosystem.name, event, data ]), function(err) {
+        redisPub.publish("notify", JSON.stringify([ Setting.ecosystem.name, event, data, onlyTargets ]), function(err) {
             if (err) console.error(`redisPub.publish error ---> ${err}`);
             if (callBack) return callBack(err);
             if (err) return reject(err);
