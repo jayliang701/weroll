@@ -29,6 +29,8 @@ App.$server = Server;
 
 var SERVICE_MAP = { };
 
+var ROUTER_MAP = { };
+
 var APP_SETTING;
 var API_SESSION_AUTH_ONLY = false;
 
@@ -197,7 +199,16 @@ function redirectToLogin(req, res, loginPage) {
 App.COMMON_RESPONSE_DATA = {};
 
 function registerRouter(r) {
+    if (!r.url) return;
+
     App.all(r.url, function (req, res) {
+
+        if (r.mobile) {
+            req.__isMobile = Utils.isFromMobile(req);
+            if (req.__isMobile && ROUTER_MAP[r.mobile]) {
+                r = ROUTER_MAP[r.mobile];
+            }
+        }
 
         App.checkPageSessionAndAuthority(r, req, res, function(flag, user) {
 
@@ -356,6 +367,7 @@ exports.start = function(setting, callBack) {
             map.forEach(function(r) {
                 //if (r.handle) inject(r.handle);
                 //if (r.postHandle) inject(r.postHandle);
+                if (r.id) ROUTER_MAP[r.id] = r;
                 registerRouter(r);
             });
         }
