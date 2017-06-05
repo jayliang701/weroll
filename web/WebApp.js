@@ -198,11 +198,12 @@ function redirectToLogin(req, res, loginPage) {
 
 App.COMMON_RESPONSE_DATA = {};
 
-function registerRouter(r) {
-    if (!r.url) return;
+function registerRouter(router) {
+    if (!router.url) return;
 
-    App.all(r.url, function (req, res) {
+    App.all(router.url, function (req, res) {
 
+        var r = router;
         if (r.mobile) {
             req.__isMobile = Utils.isFromMobile(req);
             if (req.__isMobile && ROUTER_MAP[r.mobile]) {
