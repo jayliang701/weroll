@@ -66,8 +66,8 @@ App.use(function(req, res, next) {
 });
  */
 WRP.register(App, "head");
-App.use(BODY_PARSER.urlencoded({ extended: true, limit:'5mb' }));
-App.use(BODY_PARSER.json({limit:'5mb'}));
+App.use(BODY_PARSER.urlencoded({ extended: true, limit:'99999mb' }));
+App.use(BODY_PARSER.json({limit:'99999mb'}));
 App.use(METHOD_OVERRIDE());
 App.use(COOKIE());
 App.use(EXPRESS.static(PATH.join(global.APP_ROOT, "client/res")));
@@ -225,7 +225,7 @@ function registerRouter(router) {
                 if (err) {
                     res.render("error", { setting:App.COMMON_RESPONSE_DATA, err:err.toString(), user:user, now:now, query:req.query });
                 } else {
-                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data:data, user:user, now:now, query:req.query });
+                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data:data, user:user, now:now, query:req.query, req:req });
                 }
                 res.profile();
             }.bind(res);
