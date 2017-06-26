@@ -201,6 +201,9 @@ function inject(schema) {
                         cb(err);
                     } else {
                         result.list = list || [];
+                        if (option.toObject) {
+                            result.list = JSON.parse(JSON.stringify(result.list));
+                        }
                         if (total >= 0) result.total = total;
                         cb(null, result);
                     }
