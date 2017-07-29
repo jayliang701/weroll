@@ -36,11 +36,17 @@ function CustomMiddleware(options) {
 
     if (options.cors && options.cors.enable) {
         jam.processCORS = function(req, res) {
-            res.setHeader("Access-Control-Allow-Origin", "*");
-            res.setHeader("Access-Control-Allow-Credentials", true);
-            res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Authorization, Accept, X-Requested-With");
-            res.setHeader('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
+            if (!options.cors.proxy) {
+                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.setHeader("Access-Control-Allow-Credentials", true);
+                res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Authorization, Accept, X-Requested-With");
+                res.setHeader('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
+            }
             return true;
+        }
+    } else {
+        jam.processCORS = function(req, res) {
+            return false;
         }
     }
 
@@ -73,7 +79,9 @@ function CustomMiddleware(options) {
         this.setHeader("tokentimestamp", tokentimestamp);
     }
 
-    this.processCORS = function(req, res) { return false; }
+    this.processCORS = function(req, res) {
+        return jam.processCORS(req, res);
+    }
 
     this.preprocess = function(req, res) {
 
