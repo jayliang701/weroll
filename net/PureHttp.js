@@ -125,7 +125,7 @@ exports.createServer = function() {
 
 function DefaultMiddleware() {
     this.processCORS = function(req, res) {
-        return false;
+        return true;
     }
 
     this.preprocess = function(req, res) {
