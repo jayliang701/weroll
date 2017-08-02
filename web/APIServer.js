@@ -227,6 +227,8 @@ function APIServer() {
 
         method = method[1];
 
+        instance.preprocess(req, res, auth, params);
+
         if (service.config.security && service.config.security[method]) {
             var security = service.config.security[method];
 
@@ -271,6 +273,10 @@ function APIServer() {
             service[method](req, res, params);
         }
     });
+
+    this.preprocess = function (req, res, auth, params) {
+
+    }
 
     this.checkParams = function(params, checkParams, optionalParams) {
         var val, prop, checkType, result;
