@@ -40,15 +40,31 @@ function open(host, port, name, option, callBack, asDefault) {
         if (callBack) callBack(err, newDB);
     }
 
+    var uri, opt = cloneObject(option);
+    if (host.indexOf("mongodb://") == 0) {
+        uri = host;
+    } else {
+        uri = "mongodb://" + host + ":" + port + "/" + name;
+    }
+    if (option.args && !isEmpty(option.args)) {
+        var tmp = [];
+        for (var prop in option.args) {
+            tmp.push(prop + "=" + option.args[prop]);
+        }
+        tmp = tmp.join("&");
+        if (uri.indexOf("?") < 0) uri += "?";
+        uri += tmp;
+    }
+
     if (option && option.driver == "mongoose") {
         var mongoose = require("mongoose");
         mongoose.Promise = global.Promise;
-        newDB = mongoose.createConnection("mongodb://" + host + ":" + port + "/" + name, option);
+        newDB = mongoose.createConnection(uri, opt);
         newDB.__driver = mongoose;
         process.nextTick(done);
     } else {
         var MongoClient = require("mongodb").MongoClient;
-        MongoClient.connect("mongodb://" + host + ":" + port + "/" + name, option, function (err, db) {
+        MongoClient.connect(uri, opt, function (err, db) {
             if (db) {
                 newDB = db;
                 newDB.__driver = require("mongodb");
