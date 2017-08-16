@@ -5,6 +5,7 @@
 var TemplateLib = require("./TemplateLib.js");
 var Utils = require("./Utils.js");
 var Redis = require("../model/Redis.js");
+var CODES = require("../ErrorCodes");
 var Request = require("min-request");
 
 var proxy;
@@ -20,7 +21,7 @@ exports.init = function(setting) {
     if (config.hasOwnProperty("debug")) DEBUG = config.debug;
 }
 
-function logAfterSend(phone, redisObj) {
+function logAfterSend(phone, redisObj, option) {
     var times = 1;
     var now = Date.now();
     var date = Utils.convertTimeToDate(now, false, 'en');
@@ -30,7 +31,9 @@ function logAfterSend(phone, redisObj) {
     if (redisObj) {
         times += redisObj.sendTimes;
     }
-    Redis.set(PREFIX + phone, JSON.stringify({ date:date, lastSendTime:now, sendTimes:times }), function(err) {
+    var key = PREFIX + phone;
+    if (option && option.__sendType) key += "_" + option.__sendType;
+    Redis.set(key, JSON.stringify({ date:date, lastSendTime:now, sendTimes:times }), function(err) {
         if (err) {
             console.error("log sending sms error in redis error ==> " + err.toString());
         }
@@ -47,7 +50,7 @@ function send(phone, msg) {
         var q = [];
         if (!option.enforce) {
             q.push(function(cb) {
-                checkIsAllowToSend(phone).then(function(redisLog) {
+                checkIsAllowToSend(phone, option).then(function(redisLog) {
                     sendLog = redisLog;
                     cb();
                 }).catch(function (err) {
@@ -79,7 +82,7 @@ function send(phone, msg) {
             }
         }
         runAsQueue(q, function(err) {
-            if (!err && sendLog) logAfterSend(phone, sendLog);
+            if (!err && sendLog) logAfterSend(phone, sendLog, option);
             if (callBack) return callBack(err);
             err ? reject(err) : resolve();
         });
@@ -98,9 +101,13 @@ function sendWithTemplate(phone, templateKey, params) {
     return send(phone, msg, option, callBack);
 };
 
-function checkIsAllowToSend(phone, callBack) {
+function checkIsAllowToSend(phone, option, callBack) {
+    option = option || {};
+
     return new Promise(function(resolve, reject) {
-        Redis.get(PREFIX + phone, function(err, redisRes) {
+        var key = PREFIX + phone;
+        if (option.__sendType) key += "_" + option.__sendType;
+        Redis.get(key, function(err, redisRes) {
             if (err) {
                 if (callBack) return callBack(err);
                 reject(err);
@@ -119,7 +126,7 @@ function checkIsAllowToSend(phone, callBack) {
                     var passedTime = Date.now() - Number(obj.lastSendTime);
                     if (passedTime < config.limit.duration) {
                         //too fast
-                        err = new Error("SMS send too fast");
+                        err = Error.create(CODES.SMS_SEND_TOO_FAST, "SMS send too fast");
                         if (callBack) return callBack(err);
                         reject(err);
                         return;
@@ -130,7 +137,7 @@ function checkIsAllowToSend(phone, callBack) {
                 //console.log(sendTimes, config.limit.maxPerDay);
                 if (sendTimes >= config.limit.maxPerDay) {
                     //over max times in a day
-                    err = new Error("SMS send over max times");
+                    err = Error.create(CODES.SMS_SEND_OVER_MAX_TIMES, "SMS send over max times");
                     if (callBack) return callBack(err);
                     reject(err);
                     return;

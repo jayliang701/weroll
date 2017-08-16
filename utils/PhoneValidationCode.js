@@ -35,6 +35,7 @@ exports.send = function(phone, type, option, callBack) {
 
     option = typeof arguments[2] != "function" ? arguments[2] : {};
     option = option || {};
+    option.__sendType = type;
     callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
     if (typeof callBack != "function") callBack = null;
 
