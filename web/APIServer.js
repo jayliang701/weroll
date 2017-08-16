@@ -191,6 +191,8 @@ function APIServer() {
         }
 
         req.$target = method;
+        req.$startTime = Date.now();
+
         method = method.split(".");
         var service = SERVICE_MAP[method[0]];
         if (!service || !service.hasOwnProperty(method[1])) {
@@ -222,8 +224,6 @@ function APIServer() {
                 return;
             }
         }
-
-        req.$startTime = Date.now();
 
         method = method[1];
 

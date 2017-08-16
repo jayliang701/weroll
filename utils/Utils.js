@@ -855,10 +855,9 @@ exports.isFromIOS = function() {
             userAgent = userAgent.headers['user-agent']
         }
         var u = userAgent.toLowerCase();
-        var mobile = u.indexOf('mobile') > -1;
         var iPhone = u.indexOf('iphone') > -1; //是否为iPhone
         var iPad = u.indexOf('ipad') > -1; //是否iPad
-        return mobile && iPhone && iPad;
+        return iPhone || iPad;
     } catch (err) {
         return false;
     }
