@@ -87,22 +87,11 @@ function CustomMiddleware(options) {
 
         this.processCORS(req, res);
 
-        res.setHeader("Access-Control-Allow-Headers", "X-Requested-With, X-HTTP-Method-Override, Content-Type, Content-Length, Connection, Origin, Accept, Authorization, identifyid, userid, token, tokentimestamp");
-
         res.setAuth = setResponseAuth.bind(res);
 
         req._res = res;
         res._req = req;
         req._clientIP = Utils.parseIP(req);
-
-        var identifyid = req.headers["identifyid"];
-        if (!identifyid) {
-            identifyid = md5(req.headers["user-agent"] + req._clientIP + Date.now());
-            res.setHeader("identifyid", identifyid);
-
-            //console.log("new identify_id --> " + identify_id);
-        }
-        req._identifyID = identifyid;
 
         jam.preprocess(req, res);
 
@@ -214,7 +203,7 @@ function APIServer() {
             auth = null;
         }
 
-        var params = params.data;
+        params = params.data;
         if (!params) params = {};
         if (typeof params == "string") {
             try {
