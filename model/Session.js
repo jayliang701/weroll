@@ -74,6 +74,44 @@ Session.prototype.remove = function(user, callBack) {
     });
 }
 
+Session.prototype.removeByID = function(id, callBack) {
+    var ins = this;
+    var redisKey = Redis.join(ins.config.prefix + "user_sess_" + id);
+    var q = [];
+
+    if (!ins.config.onePointEnter) {
+        q.push(function(cb) {
+            Redis.do("keys", [ Redis.join(ins.config.prefix + "user_sess_" + id + "_*") ], function(err, keys) {
+                if (err) return cb(err);
+                keys = keys || [];
+                redisKey = keys[0];
+                cb();
+            });
+        });
+    }
+    q.push(function(cb) {
+        if (redisKey) {
+            Redis.getHashAll("user_sess_" + id, function(err, sess) {
+                if (err) return cb(err);
+
+                var token = sess ? sess.token : null;
+                if (token) {
+                    remove( { id:id, token:token }, function(err) {
+                        cb(err);
+                    });
+                } else {
+                    cb();
+                }
+            });
+        } else {
+            cb();
+        }
+    });
+    runAsQueue(q, function(err) {
+        callBack && callBack(err);
+    });
+}
+
 Session.prototype.refresh = function(user) {
     var id = (user.id ? user.id : user.userid) || user._id;
     var key = this.formatKey(id, user.token);
