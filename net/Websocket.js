@@ -56,7 +56,7 @@ Websocket.prototype.start = function() {
 
         socket.info = {
             id: socket.id,
-            ip: conn.remoteAddress.replace('::ffff:', ''),
+            ip: ((socket.request.headers ? socket.request.headers['x-forwarded-for'] : undefined) || (conn.remoteAddress.replace('::ffff:', '') || undefined) || "0.0.0.0"),
             port: conn.remotePort,
             connectTime: Date.now()
         };
