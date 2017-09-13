@@ -9,6 +9,7 @@ var redis = require("./Redis");
 var Utils = require("../utils/Utils");
 
 var CACHE_CONFIG;
+var UUID_REDIS_PREFIX;
 
 var SYNC_UP_LEVEL_CACHE = {};
 var READ_LEVEL_MAPPING = {};
@@ -24,6 +25,19 @@ exports.init = function(option, callBack) {
 
     CACHE_CONFIG = FS.readFileSync(global.getConfigPath("cache.config"));
     CACHE_CONFIG = JSON.parse(CACHE_CONFIG.toString("utf8"));
+
+    UUID_REDIS_PREFIX = option.uuid_redis_prefix;
+    if (UUID_REDIS_PREFIX) {
+        if (UUID_REDIS_PREFIX.indexOf("@") == 0) {
+            exports.getIncrementalIDRedisKey = function () {
+                return redis.join(UUID_REDIS_PREFIX + "incremental_id");
+            }
+        } else {
+            exports.getIncrementalIDRedisKey = function () {
+                return UUID_REDIS_PREFIX + "incremental_id";
+            }
+        }
+    }
 
     var q = [];
 
@@ -109,8 +123,12 @@ function syncUpLevelCacheHandler(event) {
     CACHE_POOL[1].save(originalKey, val);
 }
 
+exports.getIncrementalIDRedisKey = function () {
+    return redis.join("incremental_id");
+}
+
 exports.generateIncrementalID = function(group, callBack) {
-    var key = redis.join("incremental_id");
+    var key = exports.getIncrementalIDRedisKey();
     return redis.do("HINCRBY", [ key, group, 1 ], callBack);
 }
 
