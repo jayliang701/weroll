@@ -202,8 +202,10 @@ exports.init = function(config, customSetting, callBack) {
     /* setup redis */
     var redisReady = function () {
         //Todo: some works after redisSub/redisPub are ready
-        if (!redisSub.__ready || !redisPub.__ready) return;
-        callBack && callBack();
+        if (!redisSub.__ready || !redisPub.__ready || !callBack) return;
+        var func = callBack;
+        callBack = null;
+        func && func();
     };
 
     var redisConfig = Setting.ecosystem.redis || global.SETTING.model.redis;
@@ -248,11 +250,13 @@ exports.init = function(config, customSetting, callBack) {
     redisSub.on("connect", function() {
         redisSub.subscribe("notify", function() {
             redisSub.__ready = true;
+            console.log("redisSub is connected and ready to get notify...");
             redisReady();
         });
     });
     redisPub.on("connect", function() {
         redisPub.__ready = true;
+        console.log("redisPub is connected...");
         redisReady();
     });
 }
