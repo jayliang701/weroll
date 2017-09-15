@@ -127,12 +127,16 @@ Session.prototype.check = function(id, token, callBack) {
         if (cache) {
             if (ins.checkSess(id, token, cache)) {
                 if (callBack) return callBack(null, cache);
-                resolve(cache);
+                return resolve(cache);
             } else {
-                if (callBack) return callBack(null, null);
-                resolve();
+                //if (callBack) return callBack(null, null);
+                //resolve();
+
+                //Update on 2017-9-15
+                //Fixed for cluster mode
+                //no match in memory level, need to check in redis level
+                cache = -1;
             }
-            return;
         }
 
         Redis.getHashAll(key, function(err, sess) {
@@ -148,6 +152,10 @@ Session.prototype.check = function(id, token, callBack) {
                             } catch (exp) {
                                 console.error("JSON.parse session's extra fail --> " + exp.toString());
                             }
+                        }
+                        if (cache == -1) {
+                            //need to update cache level
+                            Memory.save(key, sess, ins.config.cacheExpireTime, null);
                         }
                         if (callBack) return callBack(null, sess);
                         resolve(sess);

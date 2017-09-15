@@ -443,6 +443,11 @@ exports.start = function(setting, callBack) {
     }
 
     var port = setting.port;
+    /**
+    if (setting.clusterMode == "inc_port") {
+        port = port + (parseInt(global.workerID) || 0);
+    }
+    */
     Server.listen(port, function() {
         isRunning = true;
         console.log("Starting WebApp at port: " + port);
