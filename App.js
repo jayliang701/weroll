@@ -3,6 +3,7 @@
  */
 const CLUSTER = require('cluster');
 const PATH = require("path");
+const Configuration = require("./utils/Configuration");
 const Utils = require("./utils/Utils");
 
 function App() {
@@ -35,7 +36,8 @@ function App() {
         return require(PATH.join(global.APP_ROOT, "server/" + path));
     };
 
-    global.SETTING = global.requireModule("config/" + global.VARS.env + "/setting.js");
+    global.SETTING = Configuration.init();
+
     global.getConfigPath = function(file) {
         return PATH.join(global.APP_ROOT, "server/config/" + global.VARS.env + "/" + file);
     }

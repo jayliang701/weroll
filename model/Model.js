@@ -2,10 +2,12 @@
  * Created by Jay on 2015/8/24.
  */
 var FS = require("fs");
+var PATH = require("path");
 
 var db = require("./MongoDB");
 var memory = require("./MemoryCache");
 var redis = require("./Redis");
+var Configuration = require("../utils/Configuration");
 var Utils = require("../utils/Utils");
 
 var CACHE_CONFIG;
@@ -23,8 +25,7 @@ var CACHE_POOL = {
 
 exports.init = function(option, callBack) {
 
-    CACHE_CONFIG = FS.readFileSync(global.getConfigPath("cache.config"));
-    CACHE_CONFIG = JSON.parse(CACHE_CONFIG.toString("utf8"));
+    CACHE_CONFIG = Configuration.build(PATH.join(global.APP_ROOT, "server/config/cache.config"), global.getConfigPath("cache.config"));
 
     UUID_REDIS_PREFIX = option.uuid_redis_prefix;
     if (UUID_REDIS_PREFIX) {
