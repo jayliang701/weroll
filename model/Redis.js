@@ -186,7 +186,7 @@ exports.setHash = function(key, field, val) {
 
     return new Promise(function (resolve, reject) {
         client.hset(exports.join(key), field, val, function (err, res) {
-            setExpire(key, expire);
+            setExpire(key, expired);
             if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
@@ -205,7 +205,7 @@ exports.setHashMulti = function(key, fieldAndVals) {
 
     return new Promise(function (resolve, reject) {
         client.hmset(exports.join(key), fieldAndVals, function (err, res) {
-            setExpire(key, expire);
+            setExpire(key, expired);
             if (callBack) return callBack(err, res);
             if (err) {
                 reject(err);
