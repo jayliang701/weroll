@@ -33,11 +33,11 @@ function logAfterSend(phone, redisObj, option) {
     }
     var key = PREFIX + phone;
     if (option && option.__sendType) key += "_" + option.__sendType;
-    Redis.set(key, JSON.stringify({ date:date, lastSendTime:now, sendTimes:times }), function(err) {
+    Redis.set(key, JSON.stringify({ date:date, lastSendTime:now, sendTimes:times }), 24 * 60 * 60, function(err) {
         if (err) {
             console.error("log sending sms error in redis error ==> " + err.toString());
         }
-    }, 24 * 60 * 60);
+    });
 }
 
 function send(phone, msg) {

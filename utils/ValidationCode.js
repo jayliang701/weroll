@@ -110,7 +110,7 @@ function ValidationCode(setting) {
         var code = option.code || generateCode(parseInt(option.len || DEFAULT_CODE_LEN), option.pattern);
 
         return new Promise(function (resolve, reject) {
-            Redis.set(REDIS_KEY + key, code, function (redisErr) {
+            Redis.set(REDIS_KEY + key, code, option.expire || DEFAULT_EXPIRE, function (redisErr) {
                 if (redisErr) {
                     if (callBack) return callBack(null, redisErr);
                     return reject(redisErr);
@@ -118,7 +118,7 @@ function ValidationCode(setting) {
                 DEBUG && console.log("generate validation code --> " + key + " >>> " + code);
                 if (callBack) return callBack(null, code);
                 return resolve(code);
-            }, option.expire || DEFAULT_EXPIRE);
+            });
 
         });
     }
