@@ -402,7 +402,7 @@ exports.start = function(setting, callBack) {
     var routerFolder = PATH.join(global.APP_ROOT, routerPath);
     if (FS.existsSync(routerFolder)) {
         var viewEngine;
-        var viewCache = String(global.VARS.viewCache) == true;
+        var viewCache = String(global.VARS.viewCache) == "true";
         viewPath = PATH.join(global.APP_ROOT, viewPath);
         if (setting.viewEngine && setting.viewEngine.init) {
             viewEngine = setting.viewEngine.init(App, viewPath, viewCache);
