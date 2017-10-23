@@ -31,7 +31,7 @@ function readJSON(path) {
         txt = JSON.parse(txt);
         return txt;
     } catch (err) {
-        console.error(error);
+        console.error(err);
         return {};
     }
 }
