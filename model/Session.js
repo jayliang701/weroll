@@ -96,7 +96,7 @@ Session.prototype.removeByID = function(id, callBack) {
 
                 var token = sess ? sess.token : null;
                 if (token) {
-                    remove( { id:id, token:token }, function(err) {
+                    ins.remove( { id:id, token:token }, function(err) {
                         cb(err);
                     });
                 } else {
