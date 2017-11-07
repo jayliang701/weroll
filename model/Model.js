@@ -216,7 +216,12 @@ exports.cacheRemove = function(key) {
         CACHE_POOL[1].remove(key);
         return CACHE_POOL[2].remove(key, callBack);
     }
-
+    if (level == null || level == undefined) {
+        level = READ_LEVEL_MAPPING[tempKey];
+    }
+    if (level == null || level == undefined) {
+        level = SAVE_LEVEL_MAPPING[tempKey];
+    }
     return CACHE_POOL[level ? level : 1].remove(key, callBack);
 }
 
