@@ -211,14 +211,18 @@ function registerRouter(router) {
             }
         }
 
-        App.checkPageSessionAndAuthority(r, req, res, function(flag, user) {
-
-            if (!flag) {
-                redirectToLogin(req, res, r.loginPage);
-                return;
-            }
+        App.checkPageSessionAndAuthority(r, req, res, function(flag, user, customRedirect) {
 
             var now = Date.now();
+
+            if (!flag) {
+                if (customRedirect) {
+                    res.render(customRedirect.view, { setting:App.COMMON_RESPONSE_DATA, user:user, now:now, query:req.query, data:customRedirect.data || {} });
+                } else {
+                    redirectToLogin(req, res, r.loginPage);
+                }
+                return;
+            }
 
             var output = function(view, user, data, err) {
                 data = data ? data : {};
@@ -306,21 +310,21 @@ App.handleUserSession = function(req, res, next, error, auth) {
 }
 
 App.checkPageSessionAndAuthority = function(router, req, res, callBack) {
-    App.handleUserSession(req, res, function(flag, user) {
+    App.handleUserSession(req, res, function(flag, user, customRedirect) {
         if (!flag && router.needLogin == true) {
-            if (callBack) return callBack(false, user);
+            if (callBack) return callBack(false, user, customRedirect);
             return;
         }
         if (router.allow) {
             AuthorityChecker.check(user, router.allow, function(err, checkResult) {
-                callBack && callBack(checkResult, user);
+                callBack && callBack(checkResult, user, customRedirect);
             });
         } else {
-            callBack && callBack(true, user);
+            callBack && callBack(true, user, customRedirect);
         }
-    }, function(err) {
+    }, function(err, customRedirect) {
         console.error("handle user session error: " + err.toString());
-        callBack && callBack(false, user);
+        callBack && callBack(false, customRedirect);
     }, req.cookies, router);
 }
 
