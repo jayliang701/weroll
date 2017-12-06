@@ -136,6 +136,28 @@ exports.cloneObject = function(obj) {
     return JSON.parse(JSON.stringify(obj));
 }
 
+exports.fileExistsSync = function(path) {
+    try{
+        FS.accessSync(path, FS.F_OK);
+    } catch (err) {
+        return false;
+    }
+    return true;
+}
+
+exports.fileExists = function(path, callBack) {
+    return new Promise(function(resolve) {
+        FS.access(path, FS.F_OK, function(err) {
+            if (err) {
+                if (callBack) return callBack(false);
+                return resolve(false);
+            }
+            if (callBack) return callBack(true);
+            return resolve(true);
+        });
+    });
+}
+
 exports.md5 = function(str, option) {
     option = option || {};
     if (!option.asString) {

@@ -70,7 +70,7 @@ App.use(BODY_PARSER.urlencoded({ extended: true, limit:'99999mb' }));
 App.use(BODY_PARSER.json({limit:'99999mb'}));
 App.use(METHOD_OVERRIDE());
 App.use(COOKIE());
-App.use(EXPRESS.static(PATH.join(global.APP_ROOT, "client/res")));
+
 App.use(function(req, res, next) {
     req.callAPI = callAPI.bind(req);
     next();
@@ -361,7 +361,30 @@ exports.start = function(setting, callBack) {
     var routerPath = location.router || `${serverPath}/router`;
     var servicePath = location.service || `${serverPath}/service`;
     var clientPath = location.client || "client";
-    var viewPath = location.view || `${clientPath}/views`;
+    var defaultViewPath = PATH.join(global.APP_ROOT, "client/dist/views");
+    if (!Utils.fileExistsSync(defaultViewPath)) {
+        defaultViewPath = PATH.join(global.APP_ROOT, "client/views");
+        if (!Utils.fileExistsSync(defaultViewPath)) {
+            defaultViewPath = null;
+        }
+    }
+
+    var viewPath = location.view || defaultViewPath;
+
+    var defaultStaticResPath = PATH.join(global.APP_ROOT, "client/dist/res");
+    if (!Utils.fileExistsSync(defaultStaticResPath)) {
+        defaultStaticResPath = PATH.join(global.APP_ROOT, "client/res");
+        if (!Utils.fileExistsSync(defaultStaticResPath)) {
+            defaultStaticResPath = null;
+        }
+    }
+
+    var staticResPath = location.res || defaultStaticResPath;
+    if (staticResPath) {
+        App.use(EXPRESS.static(staticResPath));
+    }
+    console.log('use view folder: ' + viewPath);
+    console.log('use static res folder: ' + staticResPath);
 
     var doRegisterRouter = function(path, file) {
         path = path.replace(global.APP_ROOT, "").replace("\\" + serverPath + "\\", "").replace("/" + serverPath + "/", "").replace("\\", "/");
@@ -404,10 +427,9 @@ exports.start = function(setting, callBack) {
 
     //init routers
     var routerFolder = PATH.join(global.APP_ROOT, routerPath);
-    if (FS.existsSync(routerFolder)) {
+    if (Utils.fileExistsSync(routerFolder)) {
         var viewEngine;
         var viewCache = String(global.VARS.viewCache) == "true";
-        viewPath = PATH.join(global.APP_ROOT, viewPath);
         if (setting.viewEngine && setting.viewEngine.init) {
             viewEngine = setting.viewEngine.init(App, viewPath, viewCache);
         } else {
@@ -442,7 +464,7 @@ exports.start = function(setting, callBack) {
 
     //init services
     var serviceFolder = PATH.join(global.APP_ROOT, servicePath);
-    if (FS.existsSync(serviceFolder)) {
+    if (Utils.fileExistsSync(serviceFolder)) {
         checkFolder(PATH.join(global.APP_ROOT, servicePath), doRegisterService);
     }
 
