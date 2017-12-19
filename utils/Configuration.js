@@ -10,6 +10,9 @@ const vm = require('vm');
 var deepmerge = require("deepmerge");
 
 function setValue(str, key, val) {
+    if (typeof val == "number" || typeof val == "boolean") {
+        str = str.replace(new RegExp("[\"']\\$\\{" + key + "\\}[\"']", "img"), val);
+    }
     return str.replace(new RegExp("\\$\\{" + key + "\\}", "img"), val);
 }
 
