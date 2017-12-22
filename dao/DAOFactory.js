@@ -18,6 +18,11 @@ var mongooseInstance;
 
 var defs = {};
 
+var ignoreFolder = [
+    ".git", ".svn", ".idea", ".gitignore", "node_moduels"
+];
+
+
 var doRegisterSchema = function(path, file) {
     var fullPath = PATH.join(path, file);
     var isMongooseSchema = file.indexOf("Schema.js") > 0;
@@ -38,6 +43,7 @@ var checkFolder = function(path, handler) {
     if (path == __filename || path.indexOf(".svn") > 0) return;
     var files = FS.readdirSync(path);
     files.forEach(function(rf) {
+        if (ignoreFolder.indexOf(rf) >= 0) return;
         if (rf.indexOf("Schema.js") > 0 || rf.indexOf("DAO.js") > 0) {
             handler(path, rf);
         } else {

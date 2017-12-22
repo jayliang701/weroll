@@ -286,10 +286,21 @@
                 showCostTime(Date.now() - startTime);
                 resText.val(JSON.format ? JSON.format(data) : JSON.stringify(data));
 
-                if (selectedAPI.name == "user.login") {
-                    $setCookie("userid", data.userid);
-                    $setCookie("token", data.token);
-                    $setCookie("tokentimestamp", data.tokentimestamp);
+                if (selectedAPI.name.indexOf(".login") > 0) {
+                    var sess = data.sess || data;
+                    if (sess.token) {
+                        $setCookie("userid", sess.userid);
+                        $setCookie("token", sess.token);
+                        $setCookie("tokentimestamp", sess.tokentimestamp);
+                        console.log("发现登录会话token, 已切换到此账户");
+                    } else {
+                        console.warn("无法识别登录会话token");
+                    }
+                } else if (selectedAPI.name.indexOf(".logout") > 0) {
+                    $delCookie("userid");
+                    $delCookie("token");
+                    $delCookie("tokentimestamp");
+                    console.warn("登录会话已注销");
                 }
 
             }, function(code, msg) {

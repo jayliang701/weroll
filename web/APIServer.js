@@ -35,6 +35,7 @@ function CustomMiddleware(options) {
     }
 
     if (options.cors && options.cors.enable) {
+        console.log('cors: enabled');
         jam.processCORS = function(req, res) {
             if (!options.cors.proxy) {
                 res.setHeader("Access-Control-Allow-Origin", "*");
@@ -45,6 +46,7 @@ function CustomMiddleware(options) {
             return true;
         }
     } else {
+        console.log('cors: disabled');
         jam.processCORS = function(req, res) {
             return false;
         }
