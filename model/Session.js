@@ -41,7 +41,7 @@ Session.prototype.save = function(user, callBack) {
     sess.token = user.token || Utils.randomString(16);
     sess.tokentimestamp = tokentimestamp;
     sess.type = user.type;
-    var extra = user.extra;
+    var extra = cloneObject(user.extra);
     if (user.extra) {
         sess.extra = (typeof user.extra == "string") ? user.extra : JSON.stringify(user.extra);
     }
@@ -52,7 +52,7 @@ Session.prototype.save = function(user, callBack) {
     return new Promise(function (resolve, reject) {
         Redis.setHashMulti(key, sess, ins.config.tokenExpireTime).then(function() {
             sess.extra = extra;
-            Memory.save(key, sess, ins.config.cacheExpireTime, null);
+            Memory.save(key, cloneObject(sess), ins.config.cacheExpireTime, null);
             if (callBack) return callBack(null, sess);
             resolve(sess);
         }).catch(function(redisErr) {
@@ -135,7 +135,7 @@ Session.prototype.check = function(id, token, callBack) {
                 //Update on 2017-9-15
                 //Fixed for cluster mode
                 //no match in memory level, need to check in redis level
-                cache = -1;
+                //cache = -1;
             }
         }
 
@@ -153,7 +153,7 @@ Session.prototype.check = function(id, token, callBack) {
                                 console.error("JSON.parse session's extra fail --> " + exp.toString());
                             }
                         }
-                        if (cache == -1) {
+                        if (!cache) {
                             //need to update cache level
                             Memory.save(key, sess, ins.config.cacheExpireTime, null);
                         }
