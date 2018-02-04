@@ -22,7 +22,7 @@ author:
 paginate:         5
 
 # Custom vars
-version:          1.0.43
+version:          1.3.9
 
 repository:       https://github.com/jayliang701/weroll
 
