@@ -13,7 +13,7 @@ title:            weroll
 # tagline:          'An useful infrastructure of Node.js Application'
 description:      'Build Your Micro-Service System Fast and Less Codes.'
 url:              https://github.com/jayliang701/weroll
-baseurl:          /
+baseurl:          http://weroll.magicfish.cn/
 
 author:
   name:           'MagicFish Ltd. Inc.'
