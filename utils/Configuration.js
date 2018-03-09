@@ -58,7 +58,7 @@ function build(topFile, customFile) {
     vars.APP_ROOT = global.APP_ROOT.replace(/\\/gm, "\\\\");
     vars.ENV = global.VARS.env;
     _.map(vars, function (val, key) {
-        if (typeof val == "object") val = JSON.stringify(val);
+        if (typeof val === "object") val = JSON.stringify(val);
         settingStr = setValue(settingStr, key, val);
     });
 

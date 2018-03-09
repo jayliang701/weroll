@@ -1,14 +1,27 @@
-var HTTP = require('http');
+const HTTP = require('http');
 HTTP.globalAgent.maxSockets = Infinity;
-var FS = require('fs');
-var URL = require('url');
-var Async = require('async');
-var ICONV = require('iconv-lite');
-var Crypto = require("crypto");
-var BufferHelper = require('bufferhelper');
-var _ = require("underscore");
-var moment = require("moment");
-var msgpack = require('msgpack5')();
+const FS = require('fs');
+const URL = require('url');
+const Async = require('async');
+const ICONV = require('iconv-lite');
+const Crypto = require("crypto");
+const BufferHelper = require('bufferhelper');
+const _ = require("lodash");
+const moment = require("moment");
+const msgpack = require('msgpack5')();
+
+const uuidv4 = require("uuid/v4");
+const _get = require("lodash/get");
+const _set = require("lodash/set");
+
+const dotProp = { get:_get, set:_set };
+global.__defineGetter__("dotProp", function() {
+    return dotProp;
+});
+
+global.__defineGetter__("uuidv4", function() {
+    return uuidv4;
+});
 
 global.__defineGetter__('jsonZip', function() {
     return msgpack.encode;
@@ -20,10 +33,10 @@ global.__defineGetter__('jsonUnzip', function() {
 
 global.__defineGetter__('md5', function() {
     return function(str) {
-        var buf = new Buffer(str);
+        let buf = new Buffer(str);
         str = buf.toString("binary");
 
-        var hash = require("crypto").createHash("md5");
+        let hash = require("crypto").createHash("md5");
         return hash.update(str).digest("hex");
     };
 });
@@ -74,17 +87,17 @@ global.__defineGetter__('sleep', function() {
 
 Error.create = function(code, msg) {
     msg = msg ? msg.toString() : "unknown";
-    var err = new Error('code: ' + code + ', ' + msg);
+    let err = new Error('code: ' + code + ', ' + msg);
     err.code = code;
     err.msg = msg;
     err.toString = function() {
         return this.message;
-    }
+    };
     return err;
 }
 
 FS.mkdirp = function() {
-    var mkdirp = require("mkdirp");
+    let mkdirp = require("mkdirp");
     mkdirp.apply(null, Array.prototype.slice.call(arguments, 0));
 }
 
@@ -99,12 +112,12 @@ String.prototype.fillData = function(key, value) {
 }
 
 String.prototype.hasValue = function() {
-    return this != "undefined" && this != "null" && this != "";
+    return this !== "undefined" && this !== "null" && this !== "" && this.length > 0;
 }
 
 if (!Array.prototype.shuffle) {
     Array.prototype.shuffle = function() {
-        for(var j, x, i = this.length; i; j = parseInt(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
+        for (let j, x, i = this.length; i; j = parseInt(Math.random() * i), x = this[--i], this[i] = this[j], this[j] = x);
         return this;
     };
 }
@@ -161,18 +174,18 @@ exports.fileExists = function(path, callBack) {
 exports.md5 = function(str, option) {
     option = option || {};
     if (!option.asString) {
-        var buf = new Buffer(str);
+        let buf = new Buffer(str);
         str = buf.toString("binary");
     }
 
-    var hash = Crypto.createHash("md5");
+    let hash = Crypto.createHash("md5");
     return hash.update(str).digest("hex");
 }
 
 exports.rsa = function(key, plain, option) {
     option = option || {};
     if (!option.asString) {
-        var buf = null;
+        let buf = null;
         if (plain instanceof Buffer) {
             buf = plain;
         } else {
@@ -181,12 +194,12 @@ exports.rsa = function(key, plain, option) {
         plain = buf.toString("binary");
     }
 
-    var method = option.method || 'RSA-SHA1';
-    var sign = Crypto.createSign(method);
+    let method = option.method || 'RSA-SHA1';
+    let sign = Crypto.createSign(method);
     sign.update(plain);
 
-    if (key.indexOf("-----BEGIN") != 0) {
-        var TYPE = option.type || "RSA PRIVATE KEY";
+    if (key.indexOf("-----BEGIN") !== 0) {
+        let TYPE = option.type || "RSA PRIVATE KEY";
         key = `-----BEGIN ${TYPE}-----\n${key.trim()}\n-----END ${TYPE}-----`;
     }
 
@@ -196,7 +209,7 @@ exports.rsa = function(key, plain, option) {
 exports.rsaVerify = function(key, plain, signature, option) {
     option = option || {};
     if (!option.asString) {
-        var buf = null;
+        let buf = null;
         if (plain instanceof Buffer) {
             buf = plain;
         } else {
@@ -205,12 +218,12 @@ exports.rsaVerify = function(key, plain, signature, option) {
         plain = buf.toString("binary");
     }
 
-    var method = option.method || 'RSA-SHA1';
-    var sign = Crypto.createVerify(method);
+    let method = option.method || 'RSA-SHA1';
+    let sign = Crypto.createVerify(method);
     sign.update(plain);
 
-    if (key.indexOf("-----BEGIN") != 0) {
-        var TYPE = option.type || "PUBLIC KEY";
+    if (key.indexOf("-----BEGIN") !== 0) {
+        let TYPE = option.type || "PUBLIC KEY";
         key = `-----BEGIN ${TYPE}-----\n${key.trim()}\n-----END ${TYPE}-----`;
     }
 
@@ -220,9 +233,9 @@ exports.rsaVerify = function(key, plain, signature, option) {
 exports.aesEncode = function(plainText, key, iv, encoding) {
     iv = iv ? iv : new Buffer('0000000000000000');
     encoding = encoding ? encoding : 'utf8';
-    var decodeKey = Crypto.createHash('sha256').update(key).digest();
-    var cipher = Crypto.createCipheriv('aes-256-cbc', decodeKey, iv);
-    var text = ICONV.encode(new Buffer(plainText), encoding);
+    let decodeKey = Crypto.createHash('sha256').update(key).digest();
+    let cipher = Crypto.createCipheriv('aes-256-cbc', decodeKey, iv);
+    let text = ICONV.encode(new Buffer(plainText), encoding);
 
     return cipher.update(text, 'binary', 'hex') + cipher.final('hex');
 }
@@ -230,49 +243,49 @@ exports.aesEncode = function(plainText, key, iv, encoding) {
 exports.aesDecode = function(encryptText, key, iv, encoding) {
     iv = iv ? iv : new Buffer('0000000000000000');
     encoding = encoding ? encoding : 'utf8';
-    var encodeKey = Crypto.createHash('sha256').update(key).digest();
-    var cipher = Crypto.createDecipheriv('aes-256-cbc', encodeKey, iv);
-    var buffer = new BufferHelper();
+    let encodeKey = Crypto.createHash('sha256').update(key).digest();
+    let cipher = Crypto.createDecipheriv('aes-256-cbc', encodeKey, iv);
+    let buffer = new BufferHelper();
 
-    var part1 = cipher.update(encryptText, 'hex');
+    let part1 = cipher.update(encryptText, 'hex');
     buffer.concat(part1);
-    var part2 = cipher.final();
+    let part2 = cipher.final();
     buffer.concat(part2);
 
     return ICONV.decode(buffer.toBuffer(), encoding);
 }
 
 exports.randomString = function(len) {
-    var parts = [
+    let parts = [
         [ 48, 57 ], //0-9
         [ 65, 90 ], //A-Z
         [ 97, 122 ]  //a-z
     ];
 
-    var pwd = "";
-    for (var i = 0; i < len; i++)
+    let pwd = "";
+    for (let i = 0; i < len; i++)
     {
-        var part = parts[Math.floor(Math.random() * parts.length)];
+        let part = parts[Math.floor(Math.random() * parts.length)];
         //trace(part[0], part[1], Math.floor(Math.random() * (part[1] - part[0])));
-        var code = part[0] + Math.floor(Math.random() * (part[1] - part[0]));
-        var c = String.fromCharCode(code);
+        let code = part[0] + Math.floor(Math.random() * (part[1] - part[0]));
+        let c = String.fromCharCode(code);
         pwd += c;
     }
     return pwd;
 }
 
 exports.randomNumber = function(len) {
-    var parts = [
+    let parts = [
         [ 48, 57 ] //0-9
     ];
 
-    var pwd = "";
-    for (var i = 0; i < len; i++)
+    let pwd = "";
+    for (let i = 0; i < len; i++)
     {
-        var part = parts[0];
+        let part = parts[0];
         //trace(part[0], part[1], Math.floor(Math.random() * (part[1] - part[0])));
-        var code = part[0] + Math.floor(Math.random() * (part[1] - part[0]));
-        var c = String.fromCharCode(code);
+        let code = part[0] + Math.floor(Math.random() * (part[1] - part[0]));
+        let c = String.fromCharCode(code);
         pwd += c;
     }
     return pwd;
@@ -282,7 +295,7 @@ exports.stringifySignParams = function(params, option) {
     option = option || {};
 
     if (!(params instanceof Array)) {
-        var arr = [];
+        let arr = [];
         _.map(params, function (val, key) {
             arr.push([ key, val ]);
         });
@@ -291,17 +304,17 @@ exports.stringifySignParams = function(params, option) {
 
     params = _.sortBy(params, "0");
 
-    var signSource = "";
-    for (var i = 0; i < params.length; i++) {
-        var key = params[i][0];
-        var val = params[i][1];
+    let signSource = "";
+    for (let i = 0; i < params.length; i++) {
+        let key = params[i][0];
+        let val = params[i][1];
         if (!String(val).hasValue()) continue;
         if (option.encode || option.encodeComponent) {
-            if (typeof val == "string") {
+            if (typeof val === "string") {
                 if (option.encodeComponent) {
                     val = encodeURIComponent(val);
                 } else {
-                    if (String(val).substr(0, 8).toLowerCase().indexOf("http://") == 0) {
+                    if (String(val).substr(0, 8).toLowerCase().indexOf("http://") === 0) {
                         val = encodeURI(val);
                     } else {
                         val = encodeURIComponent(val);
@@ -316,9 +329,9 @@ exports.stringifySignParams = function(params, option) {
 }
 
 exports.getFunctionParameterName = function(func) {
-    var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
-    var ARGUMENT_NAMES = /([^\s,]+)/g;var fnStr = func.toString().replace(STRIP_COMMENTS, '');
-    var result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+    let STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
+    let ARGUMENT_NAMES = /([^\s,]+)/g;let fnStr = func.toString().replace(STRIP_COMMENTS, '');
+    let result = fnStr.slice(fnStr.indexOf('(')+1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
     if(result === null)
         result = [];
     return result;
@@ -327,7 +340,7 @@ exports.getFunctionParameterName = function(func) {
 exports.getCookieValue = function(cookies, key) {
     if (!isNaN(Number(cookies[key]))) return cookies[key];
 
-    var val = decodeURIComponent(cookies[key]);
+    let val = decodeURIComponent(cookies[key]);
     val = val.trim();
     if (val.charAt(0) == "'" && val.charAt(val.length - 1) == "'") {
         return val.substr(1, val.length - 2);
@@ -336,9 +349,9 @@ exports.getCookieValue = function(cookies, key) {
 }
 
 exports.hashMapToArray = function(map, json, loopFunc) {
-    var list = [];
-    for (var key in map) {
-        var obj = json ? JSON.parse(map[key]) : map[key];
+    let list = [];
+    for (let key in map) {
+        let obj = json ? JSON.parse(map[key]) : map[key];
         list.push(obj);
         if (loopFunc != null) {
             loopFunc(obj, key, map);
@@ -362,7 +375,7 @@ exports.sortArrayByNumber = function(arr, field, order, func) {
 }
 
 exports.convertArrayToHash = function(arr, key, dataHandler) {
-    var map = {};
+    let map = {};
     arr.forEach(function(obj) {
         map[obj[key]] = dataHandler != null ? dataHandler(obj) : obj;
     });
@@ -370,7 +383,7 @@ exports.convertArrayToHash = function(arr, key, dataHandler) {
 }
 
 exports.convertArrayToHash = function(arr, key, dataHandler) {
-    var map = {};
+    let map = {};
     arr.forEach(function(obj) {
         map[obj[key]] = dataHandler != null ? dataHandler(obj) : obj;
     });
@@ -378,9 +391,9 @@ exports.convertArrayToHash = function(arr, key, dataHandler) {
 }
 
 exports.convertDateString = function(date, spe) {
-    var y = date.getFullYear();
-    var m = date.getMonth() + 1;
-    var d = date.getDate();
+    let y = date.getFullYear();
+    let m = date.getMonth() + 1;
+    let d = date.getDate();
 
     spe = spe ? spe : "";
 
@@ -388,11 +401,11 @@ exports.convertDateString = function(date, spe) {
 }
 
 exports.convertDateStringToTime = function(dateStr) {
-    var parts = dateStr.split(" ");
-    var dateArr = parts[0];
-    var year;
-    var month;
-    var day;
+    let parts = dateStr.split(" ");
+    let dateArr = parts[0];
+    let year;
+    let month;
+    let day;
     if (dateArr.indexOf("-") > 0) {
         dateArr = dateStr.split("-");
         year = dateArr[0];
@@ -414,7 +427,7 @@ exports.convertDateStringToTime = function(dateStr) {
         day = dateStr.substring(dateStr.indexOf("月") + 1, dateStr.indexOf("日"));
     }
 
-    var dt = new Date();
+    let dt = new Date();
     dt.setYear(parseInt(year));
     dt.setMonth(parseInt(month) - 1);
     dt.setDate(parseInt(day));
@@ -425,21 +438,21 @@ exports.convertDateStringToTime = function(dateStr) {
 
     if (parts.length > 1) {
         try {
-            var timeStr = parts[1];
+            let timeStr = parts[1];
             if (timeStr.indexOf(":") > 0) {
-                var timeArr = timeStr.split(":");
+                let timeArr = timeStr.split(":");
                 dt.setHours(parseInt(timeArr[0]));
                 dt.setMinutes(parseInt(timeArr[1]));
                 dt.setSeconds(timeArr.length > 2 ? parseInt(timeArr[2]) : 0);
             } else if (timeStr.indexOf("时") > 0) {
-                var hh = timeStr.substring(0, timeStr.indexOf("时"));
+                let hh = timeStr.substring(0, timeStr.indexOf("时"));
                 dt.setHours(parseInt(hh));
                 if(timeStr.indexOf("分") > 0) {
-                    var mm = timeStr.substring(timeStr.indexOf("时") + 1, timeStr.indexOf("分"));
+                    let mm = timeStr.substring(timeStr.indexOf("时") + 1, timeStr.indexOf("分"));
                     dt.setMinutes(parseInt(mm));
                 }
                 if(timeStr.indexOf("秒") > 0) {
-                    var ss = timeStr.substring(timeStr.indexOf("分") + 1, timeStr.indexOf("秒"));
+                    let ss = timeStr.substring(timeStr.indexOf("分") + 1, timeStr.indexOf("秒"));
                     dt.setSeconds(parseInt(ss));
                 }
             }
@@ -451,13 +464,13 @@ exports.convertDateStringToTime = function(dateStr) {
 }
 
 exports.convertDateTimeString = function(date, needSec, dateSpe, dateTimeSpe, timeSpe) {
-    var y = date.getFullYear();
-    var m = date.getMonth() + 1;
-    var d = date.getDate();
+    let y = date.getFullYear();
+    let m = date.getMonth() + 1;
+    let d = date.getDate();
 
-    var hh = date.getHours();
-    var mm = date.getMinutes();
-    var ss = date.getSeconds();
+    let hh = date.getHours();
+    let mm = date.getMinutes();
+    let ss = date.getSeconds();
 
     dateSpe = dateSpe ? dateSpe : "";
 
@@ -469,15 +482,15 @@ exports.convertDateTimeString = function(date, needSec, dateSpe, dateTimeSpe, ti
 }
 
 exports.convertSecToTimeStr = function(val, lang, allShow) {
-    var str = '';
-    var min = Math.floor(val / 60);
-    var sec = val - min * 60;
+    let str = '';
+    let min = Math.floor(val / 60);
+    let sec = val - min * 60;
     if (sec > 0) {
         str = (sec >= 10 ? sec : ('0' + sec)) + (lang == 'en' ? '' : '秒');
     } else {
         str = '';
     }
-    var hour = Math.floor(min / 60);
+    let hour = Math.floor(min / 60);
     min = min - hour * 60;
     if (min > 0 || allShow) str = (min >= 10 ? min : ('0' + min)) + (lang == 'en' ? ':' : '分') + str;
     if (hour > 0 || allShow) str = (hour >= 10 ? hour : ('0' + hour)) + (lang == 'en' ? ':' : '小时') + str;
@@ -485,11 +498,11 @@ exports.convertSecToTimeStr = function(val, lang, allShow) {
 }
 
 exports.convertTimeToDate = function(time, toTime, lang, noSec) {
-    var date = new Date();
+    let date = new Date();
     date.setTime(time);
-    var m = date.getMonth() + 1;
-    var d = date.getDate();
-    var str = lang == "en" ? date.getFullYear() + "-" + (m >= 10 ? m : ('0' + m)) + "-" + (d >= 10 ? d : ('0' + d)) : date.getFullYear() + "年" + (m >= 10 ? m : ('0' + m)) + "月" + (d >= 10 ? d : ('0' + d)) + "日";
+    let m = date.getMonth() + 1;
+    let d = date.getDate();
+    let str = lang == "en" ? date.getFullYear() + "-" + (m >= 10 ? m : ('0' + m)) + "-" + (d >= 10 ? d : ('0' + d)) : date.getFullYear() + "年" + (m >= 10 ? m : ('0' + m)) + "月" + (d >= 10 ? d : ('0' + d)) + "日";
     if (toTime) {
         str += " " + (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) + ":" + (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes());
     }
@@ -500,9 +513,9 @@ exports.convertTimeToDate = function(time, toTime, lang, noSec) {
 }
 
 exports.getTimeHourAndMin = function(time, noSec) {
-    var date = new Date();
+    let date = new Date();
     date.setTime(time);
-    var str = (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) + ":" + (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes());
+    let str = (date.getHours() < 10 ? "0" + date.getHours() : date.getHours()) + ":" + (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes());
     if (!noSec) {
         str += ":" + (date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds());
     }
@@ -510,22 +523,22 @@ exports.getTimeHourAndMin = function(time, noSec) {
 }
 
 exports.changeDay = function(date, passDay) {
-    var todayStart = new Date();
+    let todayStart = new Date();
     todayStart.setTime(date.getTime());
     todayStart = todayStart.getTime();
     todayStart += passDay * 24 * 60 * 60 * 1000;
-    var day = new Date();
+    let day = new Date();
     day.setTime(todayStart);
     return day;
 }
 
 exports.propertyJsonParse = function(obj, clone) {
-    var temp = {};
+    let temp = {};
     if (!clone) {
         temp = obj;
     }
-    for (var key in obj) {
-        var val = obj[key];
+    for (let key in obj) {
+        let val = obj[key];
         if (typeof val == 'string' && (String(val).indexOf('{}') == 0 || String(val).indexOf('{"') == 0 || String(val).indexOf('[]') == 0 || String(val).indexOf('[{') == 0 || String(val).indexOf('[[') == 0)) {
             try {
                 temp[key] = JSON.parse(obj[key]);
@@ -540,12 +553,12 @@ exports.propertyJsonParse = function(obj, clone) {
 }
 
 exports.propertyJsonStringify = function(obj, clone) {
-    var temp = {};
+    let temp = {};
     if (!clone) {
         temp = obj;
     }
-    for (var key in obj) {
-        var val = obj[key];
+    for (let key in obj) {
+        let val = obj[key];
         if (typeof val == 'object') {
             try {
                 temp[key] = JSON.stringify(obj[key]);
@@ -560,16 +573,16 @@ exports.propertyJsonStringify = function(obj, clone) {
 }
 
 exports.getFromUrl = function(url) {
-    var option = typeof arguments[1] == "function" ? null : arguments[1];
-    var callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
+    let option = typeof arguments[1] == "function" ? null : arguments[1];
+    let callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
     if (typeof callBack != "function") callBack = null;
 
     if (option && option.debug) console.log("ready to request [" + url + "]...");
     if (option && option.debug) option._startTime = Date.now();
-    var headers = option && option.headers ? option.headers : {};
-    var urlInfo = URL.parse(url);
+    let headers = option && option.headers ? option.headers : {};
+    let urlInfo = URL.parse(url);
 
-    var req = HTTP.get({
+    let req = HTTP.get({
         hostname:urlInfo.hostname,
         port:urlInfo.port ? urlInfo.port : 80,
         path:urlInfo.path,
@@ -580,7 +593,7 @@ exports.getFromUrl = function(url) {
             if (req.$responseCookies) {
                 return req.$responseCookies[key];
             } else if (req.$response && req.$response.headers) {
-                var cookies = require("cookie").parse(req.$response.headers["set-cookie"]);
+                let cookies = require("cookie").parse(req.$response.headers["set-cookie"]);
                 cookies = cookies || {};
                 req.$responseCookies = cookies;
                 return cookies[key];
@@ -589,9 +602,9 @@ exports.getFromUrl = function(url) {
             }
         };
 
-        var buffer = new BufferHelper();
+        let buffer = new BufferHelper();
         res.on("data", function(data){
-            if (req._isTimeout == true) {
+            if (req._isTimeout === true) {
                 if (option && option.debug) console.log("ops! time out....<data>");
                 return;
             }
@@ -601,19 +614,19 @@ exports.getFromUrl = function(url) {
 
             clearTimeout(req._timeoutTimer);
 
-            if (req._isTimeout == true) {
+            if (req._isTimeout === true) {
                 if (option && option.debug) console.log("ops! time out....<end>");
                 return;
             }
 
-            var buf = buffer.toBuffer();
+            let buf = buffer.toBuffer();
             if (option && option.debug) {
                 option._costTime = Date.now() - option._startTime;
                 console.log("request end ==> " + buf.length + " bytes     " + option._costTime + "ms");
             }
 
-            //var buf = new Buffer(html,'binary');
-            var str = ICONV.decode(buf, (option && option.encoding) ? option.encoding : "utf8");
+            //let buf = new Buffer(html,'binary');
+            let str = ICONV.decode(buf, (option && option.encoding) ? option.encoding : "utf8");
             callBack(str);
         }).on("close",function(){
             callBack(null, new Error("request connection has been closed."));
@@ -634,7 +647,7 @@ exports.getFromUrl = function(url) {
 }
 
 exports.dec2hex = function(i) {
-    var result = "0000";
+    let result = "0000";
     if      (i >= 0    && i <= 15)    { result = "000" + i.toString(16); }
     else if (i >= 16   && i <= 255)   { result = "00"  + i.toString(16); }
     else if (i >= 256  && i <= 4095)  { result = "0"   + i.toString(16); }
@@ -649,15 +662,15 @@ exports.mergeObject = function(obj1, obj2, needClone) {
         obj1 = cloneObject(obj1);
         obj2 = cloneObject(obj2);
     }
-    for (var key in obj2) {
+    for (let key in obj2) {
         obj1[key] = obj2[key];
     }
     return obj1;
 }
 
 exports.html_encode = function(str) {
-    var s = "";
-    if (str.length == 0) return "";
+    let s = "";
+    if (str.length === 0) return "";
     s = str.replace(/&/img, "&gt;");
     s = s.replace(/</img, "&lt;");
     s = s.replace(/>/img, "&gt;");
@@ -671,8 +684,8 @@ exports.html_encode = function(str) {
 }
 
 exports.html_decode = function(str) {
-    var s = "";
-    if (str.length == 0) return "";
+    let s = "";
+    if (str.length === 0) return "";
     s = str.replace(/&gt;/img, "&");
     s = s.replace(/&lt;/img, "<");
     s = s.replace(/&gt;/img, ">");
@@ -687,34 +700,34 @@ exports.html_decode = function(str) {
 
 exports.fetchFirstOneFromHash = function(hash) {
     if (!hash) return null;
-    for (var prop in hash) {
+    for (let prop in hash) {
         return hash[prop];
     }
 }
 
 exports.parseIP = function (req) {
     try {
-        var ip = req.headers['X-Real-IP'] ||
+        let ip = req.headers['X-Real-IP'] ||
             req.headers['X-Forwarded-For'] ||
             req.headers['x-forwarded-for'] ||
             req.connection.remoteAddress ||
             req.socket.remoteAddress ||
             req.connection.socket.remoteAddress;
-        if (ip == "::1" || ip == "127.0.0.1") ip = "0.0.0.0";
+        if (ip === "::1" || ip === "127.0.0.1") ip = "0.0.0.0";
         return ip;
     } catch (err) {
         return "unknown"
     }
 }
 
-var TIME_RECORD = {};
+let TIME_RECORD = {};
 
 exports.startRecordTime = function(id) {
     TIME_RECORD[id] = Date.now();
 }
 
 exports.getCostTime = function(id) {
-    var time = Date.now() - TIME_RECORD[id];
+    let time = Date.now() - TIME_RECORD[id];
     delete TIME_RECORD[id];
     return time;
 }
@@ -726,15 +739,15 @@ exports.getCostTime = function(id) {
 
 //验证邮箱地址
 exports.checkEmailFormat = function(str){
-    if (!str || typeof str != 'string') return false;
-    var re = /^(\w-*\.*)+@(\w-?)+(\.\w{2,})+$/;
+    if (!str || typeof str !== 'string') return false;
+    let re = /^(\w-*\.*)+@(\w-?)+(\.\w{2,})+$/;
     return re.test(str);
 }
 
 //验证电话号码，手机或座机
 exports.checkPhoneFormat = function(str){
-    if (!str || typeof str != 'string') return false;
-    var re = /^1\d{10}$/;
+    if (!str || typeof str !== 'string') return false;
+    let re = /^1\d{10}$/;
     if (!re.test(str)) {
         re = /^0\d{2,3}-?\d{7,8}$/;
         return re.test(str);
@@ -745,10 +758,10 @@ exports.checkPhoneFormat = function(str){
 
 //验证大陆手机号码
 exports.cnCellPhoneCheck = function(str){
-    if (!str || typeof str != 'string') return false;
-    var re = /^1\d{10}$/;
+    if (!str || typeof str !== 'string') return false;
+    let re = /^1\d{10}$/;
     if(str.indexOf(",") != -1){
-        var p = str.split(",");
+        let p = str.split(",");
         p.forEach(function(v){
            if(!re.test(v)){
                return false;
@@ -756,7 +769,7 @@ exports.cnCellPhoneCheck = function(str){
         });
         return true;
     }else{
-        if (!str || str == "" || str == "undefined" || str == "null") return false;
+        if (!str || str === "" || str === "undefined" || str === "null") return false;
         return re.test(str);
     }
 }
@@ -764,19 +777,19 @@ exports.cnCellPhoneCheck = function(str){
 ///////////////////////////////////////////////////////////////////////////
 
 exports.idCardCheck = function (arrIdCard){
-    if (!arrIdCard || typeof arrIdCard != 'string') return false;
-    var tag = false;
-    var sigma = 0;
-    var a = new Array(7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 );
-    var w = new Array("1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2");
-    for (var i = 0; i < 17; i++) {
-        var ai = parseInt(arrIdCard.substring(i, i + 1));
-        var wi = a[i];
+    if (!arrIdCard || typeof arrIdCard !== 'string') return false;
+    let tag = false;
+    let sigma = 0;
+    let a = new Array(7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 );
+    let w = new Array("1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2");
+    for (let i = 0; i < 17; i++) {
+        let ai = parseInt(arrIdCard.substring(i, i + 1));
+        let wi = a[i];
         sigma += ai * wi;
     }
-    var number = sigma % 11;
-    var check_number = w[number];
-    if (arrIdCard.substring(17) != check_number) {
+    let number = sigma % 11;
+    let check_number = w[number];
+    if (arrIdCard.substring(17) !== check_number) {
         tag =  false;
     } else {
         tag = true;
@@ -785,38 +798,38 @@ exports.idCardCheck = function (arrIdCard){
 }
 
 exports.urlCheck = function (str){
-    if (!str || typeof str != 'string') return false;
+    if (!str || typeof str !== 'string') return false;
 
-    var reg = new RegExp("(http://){0,1}([0-9a-zA-z].+\.).+[a-zA-z].+/{0,1}");
-    var isurl = reg.test(str);
+    let reg = new RegExp("(http://){0,1}([0-9a-zA-z].+\.).+[a-zA-z].+/{0,1}");
+    let isurl = reg.test(str);
     return isurl;
 }
 
 exports.lookUpProperty = function(obj, prop) {
-    if (obj == null || obj == undefined || prop == null || prop == undefined) return null;
+    if (obj == null || obj === undefined || prop === null || prop === undefined) return null;
     if (prop.indexOf(".") <= 0) return obj[prop];
 
-    var keys = prop.split(".");
-    var val = obj;
-    for (var i = 0; i < keys.length; i++) {
+    let keys = prop.split(".");
+    let val = obj;
+    for (let i = 0; i < keys.length; i++) {
         val = val[keys[i]];
-        if (val == null || val == undefined) return null;
+        if (val == null || val === undefined) return null;
     }
     return val;
 }
 
 exports.setProperty = function(obj, prop, val) {
-    if (prop == null || prop == undefined) return obj;
+    if (prop == null || prop === undefined) return obj;
     obj = obj ? obj : {};
     if (prop.indexOf(".") < 0) {
         obj[prop] = val;
         return obj;
     }
 
-    var keys = prop.split(".");
-    var temp = obj;
-    for (var i = 0; i < keys.length; i++) {
-        if (i == keys.length - 1) {
+    let keys = prop.split(".");
+    let temp = obj;
+    for (let i = 0; i < keys.length; i++) {
+        if (i === keys.length - 1) {
             temp[keys[i]] = val;
         } else {
             if (!temp[keys[i]]) {
@@ -830,8 +843,8 @@ exports.setProperty = function(obj, prop, val) {
 
 exports.deepClone = function(obj) {
     if (!obj) return obj;
-    var copy = {};
-    for (var prop in obj) {
+    let copy = {};
+    for (let prop in obj) {
         exports.setProperty(copy, prop, obj[prop]);
     }
     return copy;
@@ -839,16 +852,16 @@ exports.deepClone = function(obj) {
 
 exports.isFromMobile = function() {
     try {
-        var userAgent = arguments[0];
-        if (typeof userAgent == 'object') {
+        let userAgent = arguments[0];
+        if (typeof userAgent === 'object') {
             userAgent = userAgent.headers['user-agent']
         }
-        var u = userAgent.toLowerCase();
-        var mobile = u.indexOf('mobile') > -1;
-        var wp = u.indexOf('iemobile') > -1; //是否为windows phone
-        var android = u.indexOf('android') > -1; //android终端
-        var iPhone = u.indexOf('iphone') > -1; //是否为iPhone
-        var iPad = u.indexOf('ipad') > -1; //是否iPad
+        let u = userAgent.toLowerCase();
+        let mobile = u.indexOf('mobile') > -1;
+        let wp = u.indexOf('iemobile') > -1; //是否为windows phone
+        let android = u.indexOf('android') > -1; //android终端
+        let iPhone = u.indexOf('iphone') > -1; //是否为iPhone
+        let iPad = u.indexOf('ipad') > -1; //是否iPad
         return mobile || wp || android || iPhone || iPad;
     } catch (err) {
         return false;
@@ -857,13 +870,13 @@ exports.isFromMobile = function() {
 
 exports.isFromAndroid = function() {
     try {
-        var userAgent = arguments[0];
-        if (typeof userAgent == 'object') {
+        let userAgent = arguments[0];
+        if (typeof userAgent === 'object') {
             userAgent = userAgent.headers['user-agent']
         }
-        var u = userAgent.toLowerCase();
-        var mobile = u.indexOf('mobile') > -1;
-        var android = u.indexOf('android') > -1; //android终端
+        let u = userAgent.toLowerCase();
+        let mobile = u.indexOf('mobile') > -1;
+        let android = u.indexOf('android') > -1; //android终端
         return mobile && android;
     } catch (err) {
         return false;
@@ -872,13 +885,13 @@ exports.isFromAndroid = function() {
 
 exports.isFromIOS = function() {
     try {
-        var userAgent = arguments[0];
-        if (typeof userAgent == 'object') {
+        let userAgent = arguments[0];
+        if (typeof userAgent === 'object') {
             userAgent = userAgent.headers['user-agent']
         }
-        var u = userAgent.toLowerCase();
-        var iPhone = u.indexOf('iphone') > -1; //是否为iPhone
-        var iPad = u.indexOf('ipad') > -1; //是否iPad
+        let u = userAgent.toLowerCase();
+        let iPhone = u.indexOf('iphone') > -1; //是否为iPhone
+        let iPad = u.indexOf('ipad') > -1; //是否iPad
         return iPhone || iPad;
     } catch (err) {
         return false;
@@ -886,31 +899,31 @@ exports.isFromIOS = function() {
 }
 
 exports.randomCellPhone = function(sed){
-    var phoneNumber = sed || "130";
-    for (var i=0;i<8;i++) phoneNumber += parseInt(Math.random() * 10);
+    let phoneNumber = sed || "130";
+    for (let i=0;i<8;i++) phoneNumber += parseInt(Math.random() * 10);
     return phoneNumber;
 }
 
 exports.createIdCard = function (){
-    var id_number;
-    var sigma = 0;
-    var a = new Array(7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 );
-    var w = new Array("1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2");
+    let id_number;
+    let sigma = 0;
+    let a = new Array(7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2 );
+    let w = new Array("1", "0", "X", "9", "8", "7", "6", "5", "4", "3", "2");
 
     do{
         id_number = "";
-        for (var i = 0; i < 17; i++) {
-            var ele = a[parseInt(Math.random()*10)];
+        for (let i = 0; i < 17; i++) {
+            let ele = a[parseInt(Math.random()*10)];
             id_number += ele;
-            var ai = parseInt(ele);
-            var wi = a[i];
+            let ai = parseInt(ele);
+            let wi = a[i];
             sigma += ai * wi;
         }
-        var number = sigma % 11;
-        var check_number = w[number];
+        let number = sigma % 11;
+        let check_number = w[number];
         id_number += check_number;
 
-        var check = exports.idCardCheck(id_number);
+        let check = exports.idCardCheck(id_number);
     }while( !check );
 
     return id_number;
@@ -921,22 +934,22 @@ function deg2rad(deg) {
 }
 
 exports.calDistanceInMeters = function(p1, p2) {
-    p1 = arguments.length == 2 ? arguments[0] : [ arguments[0], arguments[1] ];
-    p2 = arguments.length == 2 ? arguments[1] : [ arguments[2], arguments[3] ];
+    p1 = arguments.length === 2 ? arguments[0] : [ arguments[0], arguments[1] ];
+    p2 = arguments.length === 2 ? arguments[1] : [ arguments[2], arguments[3] ];
 
-    var x1 = p1[0];
-    var y1 = p1[1];
-    var x2 = p2[0];
-    var y2 = p2[1];
+    let x1 = p1[0];
+    let y1 = p1[1];
+    let x2 = p2[0];
+    let y2 = p2[1];
 
-    var R = 6371; // Radius of the earth in km
-    var dLat = deg2rad(x2 - x1);     // deg2rad below
-    var dLon = deg2rad(y2 - y1);
-    var a =
+    let R = 6371; // Radius of the earth in km
+    let dLat = deg2rad(x2 - x1);     // deg2rad below
+    let dLon = deg2rad(y2 - y1);
+    let a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos(deg2rad(x1)) * Math.cos(deg2rad(x2)) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c; // Distance in km
+    let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    let d = R * c; // Distance in km
     return Math.floor(d * 1000);
 }

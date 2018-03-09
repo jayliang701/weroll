@@ -1,26 +1,27 @@
 /**
  * Created by jay on 8/27/16.
  */
-var FS = require("fs");
-var PATH = require("path");
+const FS = require("fs");
+const PATH = require("path");
 
-var Model = require("../model/Model");
-var Redis = require("../model/Redis");
-var Session = require("../model/Session");
-var Utils = require("../utils/Utils");
-var Profiler = require("../utils/Profiler");
-var CODES = require("./../ErrorCodes");
+const Model = require("../model/Model");
+const Redis = require("../model/Redis");
+const Session = require("../model/Session");
+const Utils = require("../utils/Utils");
+const Profiler = require("../utils/Profiler");
+const CODES = require("./../ErrorCodes");
 
-var DEBUG = global.VARS && global.VARS.debug;
-var PROFILING = global.VARS && global.VARS.profiling;
+const DEBUG = global.VARS && global.VARS.debug;
+const PROFILING = global.VARS && global.VARS.profiling;
 
-var PureHttp = require("../net/PureHttp");
-var JsonAPIMiddleware = PureHttp.JsonAPIMiddleware;
+const PureHttp = require("../net/PureHttp");
+const JsonAPIMiddleware = PureHttp.JsonAPIMiddleware;
+const DEBUG_SERVICE_LIST = [];
 
 function CustomMiddleware(options) {
     options = options || {};
 
-    var jam = new JsonAPIMiddleware();
+    let jam = new JsonAPIMiddleware();
 
     if (options.compress) {
         jam.generateAPIHeader = function() {
@@ -34,14 +35,14 @@ function CustomMiddleware(options) {
         };
     }
 
-    if (options.cors && options.cors.enable) {
+    if (options.cors && String(options.cors.enable) === "true") {
         console.log('cors: enabled');
         jam.processCORS = function(req, res) {
             if (!options.cors.proxy) {
-                res.setHeader("Access-Control-Allow-Origin", "*");
+                res.setHeader("Access-Control-Allow-Origin", options.cors.origin || "*");
                 res.setHeader("Access-Control-Allow-Credentials", true);
-                res.setHeader("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Authorization, Accept, X-Requested-With");
-                res.setHeader('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
+                res.setHeader("Access-Control-Allow-Headers", options.cors.allowHeaders || "P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
+                res.setHeader('Access-Control-Allow-Methods', options.cors.allowMethods || 'PUT, POST, GET, DELETE, OPTIONS');
             }
             return true;
         }
@@ -55,7 +56,7 @@ function CustomMiddleware(options) {
     function profiling(req) { }
     if (PROFILING) {
 
-        var profiler = new Profiler(options.profiling);
+        let profiler = new Profiler(options.profiling);
         profiler.start();
 
         profiling = function(req) {
@@ -63,15 +64,15 @@ function CustomMiddleware(options) {
         }
     }
 
-    var setResponseAuth = function(userid, token, tokentimestamp) {
-        if (arguments[0] == null || arguments[0] == undefined) {
+    let setResponseAuth = function(userid, token, tokentimestamp) {
+        if (arguments[0] == null || arguments[0] === undefined) {
             this.removeHeader("userid", userid);
             this.removeHeader("token", token);
             this.removeHeader("tokentimestamp", tokentimestamp);
             return;
         }
-        if (arguments[0] && typeof arguments[0] == "object") {
-            var temp = arguments[0];
+        if (arguments[0] && typeof arguments[0] === "object") {
+            let temp = arguments[0];
             userid = temp.id || temp.userid;
             token = temp.token;
             tokentimestamp = temp.tokentimestamp;
@@ -109,9 +110,9 @@ function CustomMiddleware(options) {
 
 function APIServer() {
 
-    var instance = this;
+    let instance = this;
 
-    var server = PureHttp.createServer();
+    let server = PureHttp.createServer();
 
     this.server = server;
 
@@ -120,11 +121,8 @@ function APIServer() {
 
     if (DEBUG) {
         //show api debug page
-
-        var DEBUG_SERVICE_LIST = [];
-
         server.get("/__apidoc", function(req, res, params) {
-            var callback = require("url").parse(req.url, true).query.callback;
+            let callback = require("url").parse(req.url, true).query.callback;
             res.writeHead(200, {
                 "Content-Type":"text/plain; charset=utf-8"
             });
@@ -132,8 +130,8 @@ function APIServer() {
         });
 
         server.get("/__test", function(req, res, params) {
-            var html = "";
-            var compress = instance.APP_SETTING.compress ? instance.APP_SETTING.compress.api : false;
+            let html = "";
+            let compress = instance.APP_SETTING.compress ? instance.APP_SETTING.compress.api : false;
             try {
                 html = FS.readFileSync(PATH.join(__dirname, "./__test.html"), {encoding:"utf8"});
                 html = html.replace('<head>', `<head><script>window.API_COMPRESS = ${compress}</script>`);
@@ -147,22 +145,22 @@ function APIServer() {
         });
     }
 
-    var SERVICE_MAP = {};
+    let SERVICE_MAP = {};
     instance.APP_SETTING = null;
 
-    var callAPI = function(method, params) {
-        var req = this;
-        var user = typeof arguments[2] == "function" ? null : arguments[2];
-        if (typeof user != "object") user = { isLogined:false };
-        var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
-        if (typeof callBack != "function") callBack = null;
+    let callAPI = function(method, params) {
+        let req = this;
+        let user = typeof arguments[2] === "function" ? null : arguments[2];
+        if (typeof user !== "object") user = { isLogined:false };
+        let callBack = typeof arguments[2] === "function" ? arguments[2] : arguments[3];
+        if (typeof callBack !== "function") callBack = null;
         method = method.split(".");
 
         return new Promise(function (resolve, reject) {
 
-            var service = SERVICE_MAP[method[0]];
+            let service = SERVICE_MAP[method[0]];
             if (!service || !service.hasOwnProperty(method[1])) {
-                var err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
+                let err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
                 if (callBack) return callBack(err);
                 return reject(err);
             }
@@ -175,8 +173,8 @@ function APIServer() {
     };
 
     server.post("/api", function(req, res, params) {
-        var method = params.method;
-        if (!method || method == '' || method.indexOf("$") >= 0) {
+        let method = params.method;
+        if (!method || method === '' || method.indexOf("$") >= 0) {
             res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
             return;
         }
@@ -185,15 +183,15 @@ function APIServer() {
         req.$startTime = Date.now();
 
         method = method.split(".");
-        var service = SERVICE_MAP[method[0]];
+        let service = SERVICE_MAP[method[0]];
         if (!service || !service.hasOwnProperty(method[1])) {
             res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
             return;
         }
 
-        var auth = params.auth;
+        let auth = params.auth;
         if (auth) {
-            if (typeof auth == "string") {
+            if (typeof auth === "string") {
                 try {
                     auth = JSON.parse(auth);
                 } catch (err) {
@@ -207,7 +205,7 @@ function APIServer() {
 
         params = params.data;
         if (!params) params = {};
-        if (typeof params == "string") {
+        if (typeof params === "string") {
             try {
                 params = JSON.parse(params);
             } catch (err) {
@@ -221,9 +219,9 @@ function APIServer() {
         instance.preprocess(req, res, auth, params);
 
         if (service.config.security && service.config.security[method]) {
-            var security = service.config.security[method];
+            let security = service.config.security[method];
 
-            var err = instance.checkParams(params, security.checkParams, security.optionalParams);
+            let err = instance.checkParams(params, security.checkParams, security.optionalParams);
             if (err) {
                 res.sayError(err);
                 return;
@@ -237,7 +235,7 @@ function APIServer() {
                 }
 
                 if (!flag) {
-                    if (security.needLogin != true) {
+                    if (security.needLogin !== true) {
                         service[method](req, res, params, user);
                     } else {
                         res.setAuth(null);
@@ -270,7 +268,7 @@ function APIServer() {
     }
 
     this.checkParams = function(params, checkParams, optionalParams) {
-        var val, prop, checkType, result;
+        let val, prop, checkType, result;
         if (checkParams) {
             for (prop in checkParams) {
                 if (!params.hasOwnProperty(prop)) {
@@ -302,13 +300,13 @@ function APIServer() {
 
     this.handleUserSession = function(req, res, next, error, auth) {
 
-        var user = { isLogined:false };
+        let user = { isLogined:false };
 
-        var userid = auth ? auth.userid : null;
+        let userid = auth ? auth.userid : null;
 
         if (userid) {
-            var token = auth ? auth.token : null;
-            var tokentimestamp = Number(auth ? auth.tokentimestamp : 0);
+            let token = auth ? auth.token : null;
+            let tokentimestamp = Number(auth ? auth.tokentimestamp : 0);
             if (!token || !tokentimestamp || tokentimestamp <= 0) {
                 //no cookies...
                 next(0, user);
@@ -365,37 +363,37 @@ function APIServer() {
             }
         }
 
-        var doRegisterService = function(path, file) {
+        let doRegisterService = function(path, file) {
             path = path.replace(global.APP_ROOT, "").replace("\\server\\", "").replace("/server/", "").replace("\\", "/");
-            var service = global.requireModule(path + "/" + file);
+            let service = global.requireModule(path + "/" + file);
 
             if (service.config && service.config.name && service.config.enabled == true) {
                 SERVICE_MAP[service.config.name] = service;
 
                 if (DEBUG_SERVICE_LIST) {
 
-                    var scripts = FS.readFileSync(PATH.join(global.APP_ROOT, "server/service/" + file), { encoding:"utf-8" });
+                    let scripts = FS.readFileSync(PATH.join(global.APP_ROOT, "server/service/" + file), { encoding:"utf-8" });
 
-                    var methods = [];
-                    for (var key in service) {
-                        var val = service[key];
+                    let methods = [];
+                    for (let key in service) {
+                        let val = service[key];
                         if (typeof val != "function" || key.indexOf("$") == 0) continue;
                         if (val.valueOf().toString().indexOf("(req, res,") > 0) {
-                            var security = service.config.security && service.config.security[key] ? service.config.security[key] : {};
-                            var def = { name: service.config.name + "." + key, security:security, index:methods.length, desc:"", paramsDesc:{} };
+                            let security = service.config.security && service.config.security[key] ? service.config.security[key] : {};
+                            let def = { name: service.config.name + "." + key, security:security, index:methods.length, desc:"", paramsDesc:{} };
                             methods.push(def);
 
                             //parse comments
-                            var comment = scripts.match(new RegExp("//@" + key + "( )+.*[\r\n]+"));
+                            let comment = scripts.match(new RegExp("//@" + key + "( )+.*[\r\n]+"));
                             if (comment && comment[0]) {
                                 comment = comment[0].trim();
-                                var args = comment.match(new RegExp("@[a-zA-Z0-9]+( )+[^@\r\n]+", "g"));
+                                let args = comment.match(new RegExp("@[a-zA-Z0-9]+( )+[^@\r\n]+", "g"));
                                 if (args && args.length > 0) {
                                     def.desc = args[0].substring(args[0].indexOf(" ")).trim();
                                     if (args.length > 1) {
-                                        for (var i = 1; i < args.length; i++) {
-                                            var argName = args[i].substring(1, args[i].indexOf(" ")).trim();
-                                            var argDesc = args[i].substring(args[i].indexOf(" ")).trim();
+                                        for (let i = 1; i < args.length; i++) {
+                                            let argName = args[i].substring(1, args[i].indexOf(" ")).trim();
+                                            let argDesc = args[i].substring(args[i].indexOf(" ")).trim();
                                             def.paramsDesc[argName] = argDesc;
                                         }
                                     }
@@ -408,15 +406,15 @@ function APIServer() {
             }
         }
 
-        var checkFolder = function(path, handler) {
-            var files = [];
+        let checkFolder = function(path, handler) {
+            let files = [];
             try {
                 files = FS.readdirSync(path);
             } catch (exp) {
                 return;
             }
             files.forEach(function(rf) {
-                if (rf.substr(rf.length - 3, 3) == ".js") {
+                if (rf.substr(rf.length - 3, 3) === ".js") {
                     handler(path, rf);
                 } else {
                     checkFolder(PATH.join(path, rf), handler);
@@ -425,12 +423,12 @@ function APIServer() {
         }
 
         //init services
-        var serviceFolder = PATH.join(global.APP_ROOT, "server/service");
+        let serviceFolder = PATH.join(global.APP_ROOT, "server/service");
         if (FS.existsSync(serviceFolder)) {
             checkFolder(PATH.join(global.APP_ROOT, "server/service"), doRegisterService);
         }
 
-        var port = setting.port;
+        let port = setting.port;
         server.start({ port:port, ip:setting.host }, function() {
             console.log("Starting APIServer at port: " + port);
             if (callBack) callBack(instance, server);
@@ -443,7 +441,7 @@ function APIServer() {
 require("util").inherits(APIServer, require('events'));
 
 exports.createServer = function() {
-    var server = new APIServer();
+    let server = new APIServer();
     return server;
 }
 

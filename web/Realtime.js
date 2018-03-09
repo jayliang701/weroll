@@ -464,7 +464,7 @@ function DefaultAdapter(server) {
                 //server.traceLog('no such room...');
                 sockets = {};
             }
-            _.mapObject(sockets, function(val, socketID) {
+            _.mapValues(sockets, function(val, socketID) {
                 var socket = server.io.sockets.connected[socketID];
                 if (socket) {
                     server.traceLog(`found socket connection *${socketID}* and kick!`);

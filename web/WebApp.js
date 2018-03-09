@@ -36,10 +36,10 @@ var API_SESSION_AUTH_ONLY = false;
 
 var callAPI = function(method, params) {
     var req = this;
-    var user = typeof arguments[2] == "function" ? null : arguments[2];
-    if (typeof user != "object") user = null;
-    var callBack = typeof arguments[2] == "function" ? arguments[2] : arguments[3];
-    if (typeof callBack != "function") callBack = null;
+    var user = typeof arguments[2] === "function" ? null : arguments[2];
+    if (typeof user !== "object") user = null;
+    var callBack = typeof arguments[2] === "function" ? arguments[2] : arguments[3];
+    if (typeof callBack !== "function") callBack = null;
     method = method.split(".");
 
     return new Promise(function (resolve, reject) {
@@ -80,7 +80,7 @@ WRP.register(App, "middle");
 App.post("/api", function (req, res) {
 
     var method = req.body.method;
-    if (!method || method == '' || method.indexOf("$") >= 0) {
+    if (!method || method === '' || method.indexOf("$") >= 0) {
         res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
         return;
     }
@@ -95,7 +95,7 @@ App.post("/api", function (req, res) {
 
     var params = req.body.data;
     if (!params) params = {};
-    if (typeof params == "string") {
+    if (typeof params === "string") {
         try {
             params = JSON.parse(params);
         } catch (err) {
@@ -106,7 +106,7 @@ App.post("/api", function (req, res) {
 
     var auth = req.body.auth;
     if (auth) {
-        if (typeof auth == "string") {
+        if (typeof auth === "string") {
             try {
                 auth = JSON.parse(auth);
             } catch (err) {
@@ -337,6 +337,17 @@ exports.start = function(setting, callBack) {
     APP_SETTING = setting;
     API_SESSION_AUTH_ONLY = APP_SETTING.session && APP_SETTING.session.apiCheck == 1;
 
+    if (setting.cors && String(setting.cors.enable) === "true") {
+        console.log('cors: enabled');
+        App.use(function(req, res, next) {
+            res.setHeader("Access-Control-Allow-Origin", setting.cors.origin || "*");
+            res.setHeader("Access-Control-Allow-Credentials", true);
+            res.setHeader("Access-Control-Allow-Headers", setting.cors.allowHeaders || "P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
+            res.setHeader('Access-Control-Allow-Methods', setting.cors.allowMethods || 'PUT, POST, GET, DELETE, OPTIONS');
+            next();
+        });
+    }
+
     var apiCompress = setting.compress ? setting.compress.api : false;
 
     App.COMMON_RESPONSE_DATA = {
@@ -388,7 +399,7 @@ exports.start = function(setting, callBack) {
 
     var doRegisterRouter = function(path, file) {
         path = path.replace(global.APP_ROOT, "").replace("\\" + serverPath + "\\", "").replace("/" + serverPath + "/", "").replace("\\", "/");
-        if (file.indexOf("__") == 0 && !global.VARS.debug) return;
+        if (file.indexOf("__") === 0 && !global.VARS.debug) return;
         var router = global.requireModule(path + "/" + file);
         if (router.hasOwnProperty('getRouterMap') && router.getRouterMap) {
             var map = router.getRouterMap();
@@ -417,7 +428,7 @@ exports.start = function(setting, callBack) {
             return;
         }
         files.forEach(function(rf) {
-            if (rf.substr(rf.length - 3, 3) == ".js") {
+            if (rf.substr(rf.length - 3, 3) === ".js") {
                 handler(path, rf);
             } else {
                 checkFolder(PATH.join(path, rf), handler);
@@ -429,7 +440,7 @@ exports.start = function(setting, callBack) {
     var routerFolder = PATH.join(global.APP_ROOT, routerPath);
     if (Utils.fileExistsSync(routerFolder)) {
         var viewEngine;
-        var viewCache = String(global.VARS.viewCache) == "true";
+        var viewCache = String(global.VARS.viewCache) === "true";
         if (setting.viewEngine && setting.viewEngine.init) {
             viewEngine = setting.viewEngine.init(App, viewPath, viewCache);
         } else {
