@@ -112,7 +112,7 @@ String.prototype.fillData = function(key, value) {
 }
 
 String.prototype.hasValue = function() {
-    return this !== "undefined" && this !== "null" && this !== "" && this.length > 0;
+    return this != "undefined" && this != "null" && this !== "" && this.length > 0;
 }
 
 if (!Array.prototype.shuffle) {
