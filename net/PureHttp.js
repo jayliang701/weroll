@@ -142,7 +142,7 @@ function JsonAPIMiddleware() {
     var instance = this;
 
     this.generateAPIHeader = function() {
-        return { "Content-Type": "application/json" };
+        return { "Content-Type": "application/json; charset=UTF-8" };
     };
     this.encodeAPIData = function(data) {
         return JSON.stringify(data);

@@ -14,7 +14,7 @@ var options;
 var injects = { head:[], middle:[ preprocess ] };
 
 var generateAPIHeader = function() {
-    return { "Content-Type": "application/json" };
+    return { "Content-Type": "application/json; charset=UTF-8" };
 };
 var encodeAPIData = function(data) {
     return JSON.stringify(data);
@@ -67,7 +67,7 @@ function exec(q, success) {
         if (err) {
             res.sayError(err);
         } else {
-            if (arguments.length == 0 || (arguments.length == 1 && (arguments[0] == null || arguments[1] == undefined))) {
+            if (arguments.length === 0 || (arguments.length === 1 && (arguments[0] == null || arguments[1] == undefined))) {
                 res.sayOK();
             } else {
                 res.sayOK(result);
@@ -94,7 +94,7 @@ function outputData(data, headers) {
 
 function sayError() {
     var code, msg;
-    if (arguments.length == 1 && arguments[0]) {
+    if (arguments.length === 1 && arguments[0]) {
         if (arguments[0] instanceof Array) {
             code = arguments[0][0];
             msg = arguments[0][1];
@@ -111,7 +111,7 @@ function sayError() {
     }
     if (!msg) {
         msg = "unknown";
-    } else if (typeof msg == 'object') {
+    } else if (typeof msg === 'object') {
         msg = msg.message || msg.toString();
     }
     console.error(this._req.body.method + " > ", "code: " + code, "msg: " + msg);
@@ -119,7 +119,7 @@ function sayError() {
 }
 
 function sayOK(data, headers) {
-    if (arguments.length == 0) data = { flag:1 };
+    if (arguments.length === 0) data = { flag:1 };
     data = {code: CODES.OK, data:data, msg:"OK"};
     outputData.apply(this, [ data, headers ])
 }
@@ -133,7 +133,7 @@ function __callAPI(func, params, user, callBack) {
             callBack && callBack(arguments[0]);
             return;
         }
-        if (arguments.length == 1 && arguments[0]) {
+        if (arguments.length === 1 && arguments[0]) {
             if (arguments[0] instanceof Array) {
                 code = arguments[0][0];
                 msg = arguments[0][1];
@@ -147,7 +147,7 @@ function __callAPI(func, params, user, callBack) {
         }
         if (!msg) {
             msg = "unknown";
-        } else if (typeof msg == 'object') {
+        } else if (typeof msg === 'object') {
             msg = msg.toString();
         }
         callBack && callBack(Error.create(code, msg));
@@ -187,8 +187,8 @@ function goPage(url, code) {
 }
 
 function getHeader(url, code) {
-    if (url.charAt(0) == "/") url = url.substring(1);
-    if (url.indexOf("http") != 0) {
+    if (url.charAt(0) === "/") url = url.substring(1);
+    if (url.indexOf("http") !== 0) {
         url = options.site + url;
     }
     code = code ? code : 303;
@@ -202,7 +202,7 @@ function preprocess(req, res, next) {
 
     req.__callAPI = __callAPI.bind(req);
 
-    var identifyid = req.cookies.identifyid;
+    let identifyid = req.cookies.identifyid;
     if (!identifyid) {
         identifyid = Utils.md5(req.headers["user-agent"] + req._clientIP + Date.now());
         res.cookie("identifyid", identifyid);

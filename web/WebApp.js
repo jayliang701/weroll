@@ -79,7 +79,7 @@ WRP.register(App, "middle");
 
 App.post("/api", function (req, res) {
 
-    var method = req.body.method;
+    let method = req.body.method;
     if (!method || method === '' || method.indexOf("$") >= 0) {
         res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
         return;
@@ -87,13 +87,13 @@ App.post("/api", function (req, res) {
 
     req.$target = method;
     method = method.split(".");
-    var service = SERVICE_MAP[method[0]];
+    let service = SERVICE_MAP[method[0]];
     if (!service || !service.hasOwnProperty(method[1])) {
         res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
         return;
     }
 
-    var params = req.body.data;
+    let params = req.body.data;
     if (!params) params = {};
     if (typeof params === "string") {
         try {
@@ -104,7 +104,7 @@ App.post("/api", function (req, res) {
         }
     }
 
-    var auth = req.body.auth;
+    let auth = req.body.auth;
     if (auth) {
         if (typeof auth === "string") {
             try {
@@ -126,9 +126,9 @@ App.post("/api", function (req, res) {
     method = method[1];
 
     if (service.config.security && service.config.security[method]) {
-        var security = service.config.security[method];
+        let security = service.config.security[method];
 
-        var val, prop, checkType, result;
+        let val, prop, checkType, result;
         if (security.checkParams) {
             for (prop in security.checkParams) {
                 if (!params.hasOwnProperty(prop)) {
