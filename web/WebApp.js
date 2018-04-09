@@ -340,7 +340,14 @@ exports.start = function(setting, callBack) {
     if (setting.cors && String(setting.cors.enable) === "true") {
         console.log('cors: enabled');
         App.use(function(req, res, next) {
-            res.setHeader("Access-Control-Allow-Origin", setting.cors.origin || "*");
+            if (setting.cors.origin) {
+                if (!new RegExp(setting.cors.origin, "img").test(req.headers.origin)) {
+                    //not allow
+                    res.writeHead(403);
+                    return res.end();
+                }
+            }
+            res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
             res.setHeader("Access-Control-Allow-Credentials", true);
             res.setHeader("Access-Control-Allow-Headers", setting.cors.allowHeaders || "P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
             res.setHeader('Access-Control-Allow-Methods', setting.cors.allowMethods || 'PUT, POST, GET, DELETE, OPTIONS');
