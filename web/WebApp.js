@@ -347,7 +347,7 @@ exports.start = function(setting, callBack) {
                     return res.end();
                 }
             }
-            res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+            res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
             res.setHeader("Access-Control-Allow-Credentials", true);
             res.setHeader("Access-Control-Allow-Headers", setting.cors.allowHeaders || "P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
             res.setHeader('Access-Control-Allow-Methods', setting.cors.allowMethods || 'PUT, POST, GET, DELETE, OPTIONS');
