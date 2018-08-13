@@ -30,7 +30,6 @@
     "console-stamp": "^0.2.5",
     "cookie": "^0.3.1",
     "cookie-parser": "^1.4.3",
-    "dateformat": "^2.0.0",
     "deepmerge": "^1.5.1",
     "emailjs": "^1.0.8",
     "express": "^4.14.0",
