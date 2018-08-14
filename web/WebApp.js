@@ -77,7 +77,7 @@ App.use(function(req, res, next) {
 });
 WRP.register(App, "middle");
 
-App.post("/api", function (req, res) {
+App.post("/api", async function (req, res) {
 
     let method = req.body.method;
     if (!method || method === '' || method.indexOf("$") >= 0) {
@@ -104,26 +104,21 @@ App.post("/api", function (req, res) {
         }
     }
 
-    let auth = req.body.auth;
-    if (auth) {
-        if (typeof auth === "string") {
-            try {
-                auth = JSON.parse(auth);
-            } catch (err) {
-                res.sayError(CODES.REQUEST_PARAMS_INVALID, "JSON.parse(auth) error ==> " + err.toString());
-                return;
-            }
-        }
-    } else {
-        auth = null;
-    }
+    let auth = req.headers["authorization"] || params.auth;
     if (!API_SESSION_AUTH_ONLY) {
-        auth = auth ? auth : req.cookies;
+        auth = auth ? auth : req.cookies["authorization"];
+    }
+    if (auth) {
+        if (auth.startsWith("Bearer ")) {
+            auth = auth.substr("Bearer ".length);
+        }
     }
 
     req.$startTime = Date.now();
 
     method = method[1];
+
+    let doJob = service[method];
 
     if (service.config.security && service.config.security[method]) {
         let security = service.config.security[method];
@@ -159,31 +154,35 @@ App.post("/api", function (req, res) {
                 params[prop] = result.value;
             }
         }
-        App.handleUserSession(req, res, function(flag, user) {
-            if (flag == false) {
-                if (security.needLogin != true) {
-                    service[method](req, res, params, user);
-                } else {
-                    res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
-                }
-            } else {
-                if (security.allow) {
-                    AuthorityChecker.check(user, security.allow, function(err, checkResult) {
-                        if (checkResult) {
-                            service[method](req, res, params, user);
-                        } else {
-                            res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+
+        App.handleUserSession(req, res, auth).then(async user => {
+            try {
+                if (user && user.isLogined) {
+                    if (security.allow) {
+                        try {
+                            await AuthorityChecker.check(user, security.allow);
+                        } catch (err) {
+                            return res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
                         }
-                    });
-                } else {
-                    service[method](req, res, params, user);
+                    }
+                } else if (security.needLogin) {
+                    return res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
                 }
+                let ret = await doJob(params, user, req, res);
+                res.sayOK(ret);
+            } catch (err) {
+                res.sayError(err);
             }
-        }, function(err) {
+        }).catch(err => {
             res.sayError(CODES.SERVER_ERROR, err);
-        }, auth, security);
+        });        
     } else {
-        service[method](req, res, params);
+        try {
+            let ret = await doJob(params, {}, req, res);
+            res.sayOK(ret);
+        } catch (err) {
+            res.sayError(err);
+        }
     }
 });
 
@@ -194,6 +193,10 @@ function redirectToLogin(req, res, loginPage) {
     } else {
         res.goPage(loginPage + "?from=" + encodeURIComponent(req.originalUrl));
     }
+}
+
+App.authFailHandler = function(req, res, router, user) {
+    redirectToLogin(req, res, router ? router.loginPage : null);
 }
 
 App.COMMON_RESPONSE_DATA = {};
@@ -211,42 +214,51 @@ function registerRouter(router) {
             }
         }
 
-        App.checkPageSessionAndAuthority(r, req, res, function(flag, user, customRedirect) {
+        let auth =  req.cookies["authorization"] || req.headers["authorization"];
+        if (auth) {
+            if (auth.startsWith("Bearer ")) {
+                auth = auth.substr("Bearer ".length);
+            }
+        }
 
-            var now = Date.now();
+        App.handleUserSession(req, res, auth).then(async user => {
+            const now = Date.now();
 
-            if (!flag) {
-                if (customRedirect) {
-                    res.render(customRedirect.view, { setting:App.COMMON_RESPONSE_DATA, user:user, now:now, query:req.query, data:customRedirect.data || {} });
-                } else {
-                    redirectToLogin(req, res, r.loginPage);
-                }
-                return;
+            if (router.needLogin && !(user && user.isLogined)) {
+                return App.authFailHandler(req, res, r, user);
             }
 
-            var output = function(view, user, data, err) {
+            const output = function(view, user, data, err) {
                 data = data ? data : {};
                 if (err) {
-                    res.render("error", { setting:App.COMMON_RESPONSE_DATA, err:err.toString(), user:user, now:now, query:req.query });
+                    res.render("error", { setting:App.COMMON_RESPONSE_DATA, err, user, now, query:req.query });
                 } else {
-                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data:data, user:user, now:now, query:req.query, req:req });
+                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data, user, now, query:req.query });
                 }
                 res.profile();
             }.bind(res);
 
-            var r_handle = null;
+            if (router.allow) {
+                try {
+                    await AuthorityChecker.check(user, router.allow);
+                } catch (err) {
+                    return App.authFailHandler(req, res, r, user);
+                }
+            }
+
+            let r_handle = null;
 
             req.$startTime = now;
             req.$target = r.url + "@" + req.method;
 
-            if(req.method == "POST"){
+            if (req.method === "POST"){
                 if (r.postHandle) r_handle = r.postHandle;
-            }else{
+            } else {
                 if (r.handle) r_handle = r.handle;
             }
 
             if (r_handle != null) {
-                var func = function(data, err, useView) {
+                let func = function(data, err, useView) {
                     output(useView ? useView : r.view, user, data, err);
                 };
                 func.status = function(code) {
@@ -261,71 +273,27 @@ function registerRouter(router) {
             } else {
                 output(r.view, user);
             }
-
         });
     });
 }
 
-App.handleUserSession = function(req, res, next, error, auth) {
+App.handleUserSession = function(req, res, auth) {
+    return new Promise((resolve) => {
+        let user = { isLogined:false };
 
-    var user = { isLogined:false };
+        if (!auth) return resolve(user);
 
-    var userid = auth ? auth.userid : null;
+        Session.getSharedInstance().check(auth, (err, sess) => {
+            if (err) return resolve(user);
 
-    if (userid) {
-        var token = auth ? auth.token : null;
-        var tokentimestamp = Number(auth ? auth.tokentimestamp : 0);
-        if (!token || !tokentimestamp || tokentimestamp <= 0) {
-            //no cookies...
-            next(0, user);
-        } else {
-            Session.getSharedInstance().check(userid, token, function(err, sess) {
-                if (err) {
-                    error(err, user);
-                } else {
-                    if (sess) {
-                        //get user info from cache
-                        Model.cacheRead(["user_info", userid], function(uc) {
-                            if (uc) {
-                                user = uc;
-                            }
-                            user.isLogined = true;
-                            user.id = userid;
-                            user.userid = userid;
-                            user.token = token;
-                            user.tokentimestamp = tokentimestamp;
-                            user.extra = sess.extra || {};
-                            user.type = parseInt(sess.type);
-                            next(1, user);
-                        });
-                    } else {
-                        next(0, user);
-                    }
-                }
-            });
-        }
-    } else {
-        next(0, user);
-    }
-}
-
-App.checkPageSessionAndAuthority = function(router, req, res, callBack) {
-    App.handleUserSession(req, res, function(flag, user, customRedirect) {
-        if (!flag && router.needLogin == true) {
-            if (callBack) return callBack(false, user, customRedirect);
-            return;
-        }
-        if (router.allow) {
-            AuthorityChecker.check(user, router.allow, function(err, checkResult) {
-                callBack && callBack(checkResult, user, customRedirect);
-            });
-        } else {
-            callBack && callBack(true, user, customRedirect);
-        }
-    }, function(err, customRedirect) {
-        console.error("handle user session error: " + err.toString());
-        callBack && callBack(false, customRedirect);
-    }, req.cookies, router);
+            user = sess;
+            user.isLogined = true;
+            user.id = user.userid;
+            user.auth = auth;
+            
+            resolve(user);
+        });
+    });
 }
 
 exports.start = function(setting, callBack) {
@@ -349,7 +317,7 @@ exports.start = function(setting, callBack) {
             }
             res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
             res.setHeader("Access-Control-Allow-Credentials", true);
-            res.setHeader("Access-Control-Allow-Headers", setting.cors.allowHeaders || "P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
+            res.setHeader("Access-Control-Allow-Headers", setting.cors.allowHeaders || "Authorization,P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
             res.setHeader('Access-Control-Allow-Methods', setting.cors.allowMethods || 'PUT, POST, GET, DELETE, OPTIONS');
             next();
         });

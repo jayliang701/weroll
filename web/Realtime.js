@@ -529,8 +529,8 @@ function DefaultAdapter(server) {
 
     this.shakehand = function(socket, data, callBack) {
         return new Promise(function(resolve) {
-            var sess = data ? data._sess : null;
-            if (!sess || !sess.userid || !sess.token || !sess.tokentimestamp) {
+            var auth = data ? data._auth : null;
+            if (!auth) {
                 return process.nextTick(function() {
                     var flag = instance.config.allowGuest ? true : false;
                     if (callBack) return callBack(flag);
@@ -538,7 +538,7 @@ function DefaultAdapter(server) {
                 });
             }
 
-            instance.Session.check(sess.userid, sess.token, function(err, sess) {
+            instance.Session.check(auth, function(err, sess) {
                 if (!err && sess) {
                     socket.info.session = sess;
                     socket.info.shakeHandTime = Date.now();

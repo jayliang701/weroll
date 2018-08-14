@@ -18,17 +18,20 @@ exports.register = function(type, func) {
     checker[type] = func.bind(checker);
 }
 
-exports.check = function(user, allow, callBack) {
-    //allow --> [ [ "type", [1,2] ] ]
-    var q = [];
-    allow.forEach(function(def) {
-        q.push(function(cb) {
-            checker[def[0]](user, def[1], function (result) {
-                cb(result ? null : new Error("check authority fail: " + def[0]));
+exports.check = function(user, allow) {
+    return new Promise((resolve, reject) => {
+        //allow --> [ [ "type", [1,2] ] ]
+        var q = [];
+        allow.forEach(function(def) {
+            q.push(function(cb) {
+                checker[def[0]](user, def[1], function (result) {
+                    cb(result ? null : new Error("check authority fail: " + def[0]));
+                });
             });
         });
-    });
-    runAsQueue(q, function(err) {
-        callBack(err, err ? false : true);
+        runAsQueue(q, function(err) {
+            if (err) return reject(err);
+            resolve();
+        });
     });
 }

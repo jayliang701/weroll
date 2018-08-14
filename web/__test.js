@@ -33,7 +33,6 @@ function renderAPIDoc(req, res, output, user) {
 }
 
 function renderRoot(req, res, output, user) {
-
     if (!SERVICE_LIST) {
         SERVICE_LIST = [];
 
@@ -61,25 +60,22 @@ function renderRoot(req, res, output, user) {
                 for (var key in service) {
                     var val = service[key];
                     if (typeof val != "function" || key.indexOf("$") == 0) continue;
-                    var funcArgs = getFunctionParameterName(val);
-                    if (funcArgs[0] == 'req' && funcArgs[1] == 'res') {
-                        var security = service.config.security && service.config.security[key] ? service.config.security[key] : {};
-                        var def = { name: service.config.name + "." + key, security:security, index:methods.length, desc:"", paramsDesc:{} };
-                        methods.push(def);
+                    var security = service.config.security && service.config.security[key] ? service.config.security[key] : {};
+                    var def = { name: service.config.name + "." + key, security:security, index:methods.length, desc:"", paramsDesc:{} };
+                    methods.push(def);
 
-                        //parse comments
-                        var comment = scripts.match(new RegExp("//@" + key + "( )+.*[\r\n]+"));
-                        if (comment && comment[0]) {
-                            comment = comment[0].trim();
-                            var args = comment.match(new RegExp("@[a-zA-Z0-9]+( )+[^@\r\n]+", "g"));
-                            if (args && args.length > 0) {
-                                def.desc = args[0].substring(args[0].indexOf(" ")).trim();
-                                if (args.length > 1) {
-                                    for (var i = 1; i < args.length; i++) {
-                                        var argName = args[i].substring(1, args[i].indexOf(" ")).trim();
-                                        var argDesc = args[i].substring(args[i].indexOf(" ")).trim();
-                                        def.paramsDesc[argName] = argDesc;
-                                    }
+                    //parse comments
+                    var comment = scripts.match(new RegExp("//@" + key + "( )+.*[\r\n]+"));
+                    if (comment && comment[0]) {
+                        comment = comment[0].trim();
+                        var args = comment.match(new RegExp("@[a-zA-Z0-9]+( )+[^@\r\n]+", "g"));
+                        if (args && args.length > 0) {
+                            def.desc = args[0].substring(args[0].indexOf(" ")).trim();
+                            if (args.length > 1) {
+                                for (var i = 1; i < args.length; i++) {
+                                    var argName = args[i].substring(1, args[i].indexOf(" ")).trim();
+                                    var argDesc = args[i].substring(args[i].indexOf(" ")).trim();
+                                    def.paramsDesc[argName] = argDesc;
                                 }
                             }
                         }

@@ -102,26 +102,16 @@
                 trace('show loading...');
             }
 
-            var auth = {};
-            var userid = $getCookie("userid");
-            if (userid) auth.userid = userid;
-
-            var token = $getCookie("token");
-            if (token) auth.token = token;
-
-            var tokentimestamp = $getCookie("tokentimestamp");
-            if (tokentimestamp) auth.tokentimestamp = tokentimestamp;
-
             var params = {};
             params.method = method;
             params.data = data;
-            params.auth = auth;
 
             $.ajax({
                 type: "post",
                 url: API_GATEWAY,
                 headers: {
-                    "Content-Type": "application/json; charset=UTF-8"
+                    "Content-Type": "application/json; charset=UTF-8",
+                    "Authorization": "Bearer " + $user.auth
                 },
                 xhrFields : {
                     responseType : window.API_COMPRESS ? 'arraybuffer' : 'text'
@@ -198,18 +188,14 @@
                         ele += '</optgroup>';
                         selector.append(ele);
                     });
-                    if ($getCookie('userid') && $getCookie("token")) {
+                    var auth = localStorage.getItem("auth") || "";
+                    if (auth) {
                         $user.isLogined = true;
-                        $user.userid = $user.id = $getCookie('userid');
-                        $user.token = $getCookie('token');
-                        $user.tokentimestamp = Number($getCookie('tokentimestamp'));
+                        $user.auth = auth;
                     }
 
                     if ($user && $user.isLogined) {
-                        var info = 'id: ' + $user.id + '<br>';
-                        info += 'token: ' + $user.token + '<br>';
-                        info += 'tokentimestamp: ' + $user.tokentimestamp + '<br>';
-                        $('#userInfo').html('<br>' + info);
+                        $('#userInfo').html('<span style="color: green;">已登录</span>');
                     }
                 },
                 error: function(){
@@ -289,18 +275,15 @@
                 if (selectedAPI.name.indexOf(".login") > 0) {
                     var sess = data.sess || data;
                     if (sess.token) {
-                        $setCookie("userid", sess.userid);
-                        $setCookie("token", sess.token);
-                        $setCookie("tokentimestamp", sess.tokentimestamp);
                         console.log("发现登录会话token, 已切换到此账户");
+                        localStorage.setItem("auth", sess.token);
+                        localStorage.flush();
                     } else {
                         console.warn("无法识别登录会话token");
                     }
                 } else if (selectedAPI.name.indexOf(".logout") > 0) {
-                    $delCookie("userid");
-                    $delCookie("token");
-                    $delCookie("tokentimestamp");
                     console.warn("登录会话已注销");
+                        localStorage.removeItem("auth");
                 }
 
             }, function(code, msg) {
@@ -345,7 +328,7 @@
 <div class="container">
     <div class="col-3 left_content" style="max-width: 360px; float:left;">
         <div class="col-10" style=" padding: 20px;">
-            <h4 style="padding-bottom: 10px;">当前登录用户: <b id="userInfo">无</b></h4>
+            <h4 style="padding-bottom: 10px;">当前登录状态: <b id="userInfo">无</b></h4>
             <ul class="ul_v_layout" style="list-style: none;">
                 <li>
                     <p style="padding-bottom: 6px;"><label for="methodSelector">API接口列表</label></p>

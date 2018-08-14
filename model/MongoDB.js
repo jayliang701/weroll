@@ -306,7 +306,6 @@ function update(dbName, target, filter, params, option, callBack) {
         var targetCol = db.collection(target);
 
         var changes = processUpdateParams(params);
-
         targetCol.update(filter,
             changes,
             {upsert:option && option.upsert ? true : false, multi:option && option.multi ? true : false, w:1},
@@ -394,7 +393,11 @@ function findOneAndDelete(dbName, target, filter, options) {
     });
 }
 
-function ensureIndex(dbName, target, key, callBack) {
+function ensureIndex(dbName, target, key, option, callBack) {
+    var callBack = arguments[arguments.length - 1];
+    if (typeof callBack != "function") callBack = null;
+    option = typeof option === "object" ? option : null;
+
     return new Promise(function (resolve, reject) {
         var db = getDBByName(dbName);
         if (!db) {
@@ -412,7 +415,25 @@ function ensureIndex(dbName, target, key, callBack) {
             indexes = {};
             indexes[key] = 1;
         }
-        targetCol.ensureIndex(indexes, function(err, result) {
+        targetCol.ensureIndex(indexes, option, function(err, result) {
+            if (callBack) return callBack(err, result);
+            err ? reject(err) : resolve(result);
+        });
+    });
+}
+
+function getIndexes(dbName, target, callBack) {
+    return new Promise(function (resolve, reject) {
+        var db = getDBByName(dbName);
+        if (!db) {
+            var err = createNotOpenErr(dbName);
+            if (callBack) return callBack(err);
+            return reject(err);
+        }
+
+        var targetCol = db.collection(target);
+        
+        targetCol.indexInformation(function(err, result) {
             if (callBack) return callBack(err, result);
             err ? reject(err) : resolve(result);
         });
@@ -543,6 +564,7 @@ exports.findOne = findOne;
 exports.findPage = findPage;
 exports.aggregate = aggregate;
 exports.ensureIndex = ensureIndex;
+exports.getIndexes = getIndexes;
 exports.listAllCollections = listAllCollections;
 exports.count = count;
 exports.update = update;

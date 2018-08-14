@@ -279,6 +279,9 @@ var DBInstance = function(name) {
     this.ensureIndex = function() {
         return db.ensureIndex.apply(db, [ this.name ].concat(Array.prototype.slice.call(arguments)));
     }
+    this.getIndexes = function() {
+        return db.getIndexes.apply(db, [ this.name ].concat(Array.prototype.slice.call(arguments)));
+    }
     this.listAllCollections = function() {
         return db.listAllCollections.apply(db, [ this.name ].concat(Array.prototype.slice.call(arguments)));
     }

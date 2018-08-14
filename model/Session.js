@@ -1,179 +1,174 @@
 /**
  * Created by Jay on 2015/8/27.
  */
-var Memory = require("./MemoryCache");
-var Redis = require("./Redis");
-var Utils = require("../utils/Utils");
+const JWT = require('jsonwebtoken');
+const CODES = require("../ErrorCodes");
+const RedisSessionPayload = require("./adapter/RedisSessionPayload");
+const MongoSessionPayload = require("./adapter/MongoSessionPayload");
 
 function Session() {
     if (!Session.$instance) Session.$instance = this;
     this.config = {};
 }
 
-Session.prototype.init = function(params) {
+Session.prototype.init = function (params) {
     this.config = params || {};
     this.config.prefix = this.config.prefix || "";
-    var ins = this;
+    let ins = this;
     if (this.config.onePointEnter) {
-        this.formatKey = function(id, token) {
-            return ins.config.prefix + "user_sess_" + id;
+        this.formatKey = function (id, token) {
+            return ins.config.prefix + "user_sess_" + id + "_0";
         }
-        this.checkSess = function(id, token, sess) {
+        this.checkSess = function (id, token, sess) {
             return sess.userid == id && sess.token == token;
         }
     } else {
-        this.formatKey = function(id, token) {
+        this.formatKey = function (id, token) {
             return ins.config.prefix + "user_sess_" + id + "_" + token;
         }
-        this.checkSess = function(id, token, sess) {
+        this.checkSess = function (id, token, sess) {
             return true;
         }
     }
-}
-
-Session.prototype.save = function(user, callBack) {
-
-    var userID = (user.id ? user.id : user.userid) || user._id;
-    var tokentimestamp = Date.now();
-
-    var sess = {};
-    sess.userid = userID;
-    sess.token = user.token || Utils.randomString(16);
-    sess.tokentimestamp = tokentimestamp;
-    sess.type = user.type;
-    var extra = cloneObject(user.extra);
-    if (user.extra) {
-        sess.extra = (typeof user.extra == "string") ? user.extra : JSON.stringify(user.extra);
+    if (params.payloadWorker) {
+        this.payloadWorker = params.payloadWorker;
     }
-
-    var key = this.formatKey(sess.userid, sess.token);
-
-    var ins = this;
-    return new Promise(function (resolve, reject) {
-        Redis.setHashMulti(key, sess, ins.config.tokenExpireTime).then(function() {
-            sess.extra = extra;
-            Memory.save(key, cloneObject(sess), ins.config.cacheExpireTime, null);
-            if (callBack) return callBack(null, sess);
-            resolve(sess);
-        }).catch(function(redisErr) {
-            if (callBack) return callBack(redisErr);
-            reject(redisErr);
-        });
-    });
-}
-
-Session.prototype.remove = function(user, callBack) {
-    var id = (user.id ? user.id : user.userid) || user._id;
-    var key = this.formatKey(id, user.token);
-    Memory.remove(key);
-    return new Promise(function (resolve, reject) {
-        Redis.del(key, function(err) {
-            if (callBack) return callBack(err);
-            err ? reject(err) : resolve();
-        });
-    });
-}
-
-Session.prototype.removeByID = function(id, callBack) {
-    var ins = this;
-    var redisKey = Redis.join(ins.config.prefix + "user_sess_" + id);
-    var q = [];
-
-    if (!ins.config.onePointEnter) {
-        q.push(function(cb) {
-            Redis.do("keys", [ Redis.join(ins.config.prefix + "user_sess_" + id + "_*") ], function(err, keys) {
-                if (err) return cb(err);
-                keys = keys || [];
-                redisKey = keys[0];
-                cb();
-            });
-        });
-    }
-    q.push(function(cb) {
-        if (redisKey) {
-            Redis.getHashAll("user_sess_" + id, function(err, sess) {
-                if (err) return cb(err);
-
-                var token = sess ? sess.token : null;
-                if (token) {
-                    ins.remove( { id:id, token:token }, function(err) {
-                        cb(err);
-                    });
-                } else {
-                    cb();
-                }
-            });
+    if (!this.payloadWorker) {
+        if (this.config.storage === "mongodb") {
+            this.payloadWorker = new MongoSessionPayload();
         } else {
-            cb();
+            this.payloadWorker = new RedisSessionPayload();
         }
-    });
-    runAsQueue(q, function(err) {
-        callBack && callBack(err);
-    });
+    }
+    this.payloadWorker.session = this;
 }
 
-Session.prototype.refresh = function(user) {
-    var id = (user.id ? user.id : user.userid) || user._id;
-    var key = this.formatKey(id, user.token);
-    Memory.setExpireTime(key, this.config.tokenExpireTime);
-    Redis.setExpireTime(key, this.config.tokenExpireTime);
+Session.prototype.savePayload = function (key, payload, expireTime) {
+    return this.payloadWorker.savePayload(key, payload, expireTime);
 }
 
-Session.prototype.check = function(id, token, callBack) {
-    var ins = this;
-    return new Promise(function (resolve, reject) {
-        var key = ins.formatKey(id, token);
-        var cache = Memory.read(key);
-        if (cache) {
-            if (ins.checkSess(id, token, cache)) {
-                if (callBack) return callBack(null, cache);
-                return resolve(cache);
-            } else {
-                //if (callBack) return callBack(null, null);
-                //resolve();
+Session.prototype.readPayload = function (key) {
+    return this.payloadWorker.readPayload(key);
+}
 
-                //Update on 2017-9-15
-                //Fixed for cluster mode
-                //no match in memory level, need to check in redis level
-                //cache = -1;
-            }
-        }
+Session.prototype.removePayload = function (key) {
+    return this.payloadWorker.removePayload(key);
+}
 
-        Redis.getHashAll(key, function(err, sess) {
-            if (err) {
-                if (callBack) return callBack(err);
-                reject(err);
-            } else {
-                if (sess) {
-                    if (ins.checkSess(id, token, sess)) {
-                        if (sess.extra && typeof sess.extra == "string") {
-                            try {
-                                sess.extra = JSON.parse(sess.extra);
-                            } catch (exp) {
-                                console.error("JSON.parse session's extra fail --> " + exp.toString());
-                            }
-                        }
-                        if (!cache) {
-                            //need to update cache level
-                            Memory.save(key, sess, ins.config.cacheExpireTime, null);
-                        }
-                        if (callBack) return callBack(null, sess);
-                        resolve(sess);
-                    } else {
-                        if (callBack) return callBack(null, null);
-                        resolve();
-                    }
-                } else {
-                    if (callBack) return callBack(null, null);
-                    resolve();
-                }
-            }
+Session.prototype.findAllPayloadKeys = function (userid) {
+    return this.payloadWorker.findAllPayloadKeys(userid);
+}
+
+Session.prototype.refreshPayloadExpireTime = function (key, expireTime) {
+    return this.payloadWorker.refreshPayloadExpireTime(key, expireTime);
+}
+
+Session.prototype.save = function (user, extra, callBack) {
+
+    callBack = arguments[arguments.length - 1];
+    if (typeof callBack !== "function") callBack = null;
+    extra = typeof extra === "object" ? extra : null;
+
+    let userID = (user.id ? user.id : user.userid) || user._id;
+
+    let loginTime = Date.now();
+    let expireTime = this.config.tokenExpireTime;
+
+    let sess = { ...extra };
+    sess.userid = userID;
+    sess.type = user.type;
+    sess.loginTime = loginTime;
+
+    let token = JWT.sign({ id: sess.userid, time: loginTime }, this.config.secret, { expiresIn: expireTime });
+
+    let ins = this;
+    return new Promise((resolve, reject) => {
+        const key = ins.formatKey(userID, loginTime);
+        ins.savePayload(key, sess, expireTime).then(() => {
+            if (callBack) return callBack(null, token);
+            resolve(token);
+        }).catch(err => {
+            console.error(err);
+            if (callBack) return callBack(err);
+            reject(err);
         });
     });
 }
 
-Session.getSharedInstance = function() {
-    var ins = Session.$instance;
+Session.prototype.remove = function (user, callBack) {
+    let id = (user.id ? user.id : user.userid) || user._id;
+    let key = this.formatKey(id, user.loginTime);
+    return new Promise((resolve, reject) => {
+        this.removePayload(key).then(() => {
+            if (callBack) return callBack();
+            resolve();
+        }).catch(err => {
+            console.error(err);
+            if (callBack) return callBack(err);
+            reject(err);
+        });
+    });
+}
+
+Session.prototype.removeAll = function (userid, callBack) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let keys = await this.findAllPayloadKeys(userid);
+            for (let i = 0; i < keys.length; i++) {
+                await this.removePayload(keys[i]);
+            }
+        } catch (err) {
+            console.error(err);
+            if (callBack) return callBack(err);
+            reject(err);
+        }
+        resolve();
+    });
+}
+
+Session.prototype.refresh = function (user, extra, callBack) {
+
+    callBack = arguments[arguments.length - 1];
+    if (typeof callBack !== "function") callBack = null;
+    extra = typeof extra === "object" ? extra : null;
+
+    return new Promise(async (resolve, reject) => {
+        try {
+            await this.remove(user);
+            let token = this.save(user, extra);
+            if (callBack) return callBack(null, token);
+            resolve(token);
+        } catch (err) {
+            console.error(err);
+            if (callBack) return callBack(err);
+            reject(err);
+        }
+    });
+}
+
+Session.prototype.check = function (auth, callBack) {
+    return new Promise(async (resolve, reject) => {
+        // invalid auth - synchronous
+        try {
+            let decoded = JWT.verify(auth, this.config.secret);
+            let key = this.formatKey(decoded.id, decoded.time);
+            let payload = await this.readPayload(key);
+            if (!payload) {
+                throw Error.create(CODES.SESSION_ERROR, 'auth expired or invalid');
+            }
+
+            if (callBack) return callBack(null, payload);
+            resolve(payload);
+        } catch (err) {
+            if (err.code !== CODES.SESSION_ERROR) console.error(err);
+            if (callBack) return callBack(err);
+            reject(err);
+        }
+    });
+}
+
+Session.getSharedInstance = function () {
+    let ins = Session.$instance;
     if (!ins) {
         ins = new Session();
         Session.$instance = ins;
@@ -181,7 +176,7 @@ Session.getSharedInstance = function() {
     return ins;
 }
 
-Session.setSharedInstance = function(ins) {
+Session.setSharedInstance = function (ins) {
     Session.$instance = ins;
 }
 
