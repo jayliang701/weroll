@@ -249,7 +249,7 @@ exports.refreshExpireTime = function(key, level) {
     CACHE_POOL[level].setExpireTime(key, time);
 }
 
-var DBInstance = function(name) {
+const DBInstance = function(name) {
     this.name = name;
 
     this.insert = function() {
@@ -307,6 +307,7 @@ exports.openDB = function(config, asDefault, callBack) {
             function(err, db) {
                 if (db) {
                     var ins = new DBInstance(asDefault ? null : config.name);
+                    ins.engine = db;
                     if (asDefault) {
                         ins.__dbs = exports.DB.__dbs;
                         exports.DB = ins;
