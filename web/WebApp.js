@@ -269,7 +269,10 @@ function registerRouter(router) {
                         }
                     };
                 };
-                r_handle(req, res, func, user);
+                let result = r_handle(req, res, func, user);
+                if (result !== undefined && result !== null && (typeof result === "object" || result instanceof Array)) {
+                    func(result);
+                }
             } else {
                 output(r.view, user);
             }
