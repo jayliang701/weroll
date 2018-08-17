@@ -41,7 +41,7 @@ function CustomMiddleware(options) {
             if (!options.cors.proxy) {
                 res.setHeader("Access-Control-Allow-Origin", options.cors.origin || "*");
                 res.setHeader("Access-Control-Allow-Credentials", true);
-                res.setHeader("Access-Control-Allow-Headers", options.cors.allowHeaders || "P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
+                res.setHeader("Access-Control-Allow-Headers", options.cors.allowHeaders || "Authorization,P3P,DNT,X-Mx-ReqToken,X-Requested-With,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type");
                 res.setHeader('Access-Control-Allow-Methods', options.cors.allowMethods || 'PUT, POST, GET, DELETE, OPTIONS');
             }
             return true;
@@ -64,22 +64,16 @@ function CustomMiddleware(options) {
         }
     }
 
-    let setResponseAuth = function(userid, token, tokentimestamp) {
-        if (arguments[0] == null || arguments[0] === undefined) {
-            this.removeHeader("userid", userid);
-            this.removeHeader("token", token);
-            this.removeHeader("tokentimestamp", tokentimestamp);
+    let setResponseAuth = function(token) {
+        let arg = arguments[0];
+        if (arg == null || arg === undefined) {
+            this.removeHeader("Authorization");
             return;
         }
-        if (arguments[0] && typeof arguments[0] === "object") {
-            let temp = arguments[0];
-            userid = temp.id || temp.userid;
-            token = temp.token;
-            tokentimestamp = temp.tokentimestamp;
+        if (arg && typeof arg === "object") {
+            token = arg.auth || arg.token;
         }
-        this.setHeader("userid", userid);
-        this.setHeader("token", token);
-        this.setHeader("tokentimestamp", tokentimestamp);
+        this.setHeader("Authorization", token || "");
     }
 
     this.processCORS = function(req, res) {
@@ -172,7 +166,7 @@ function APIServer() {
         });
     };
 
-    server.post("/api", function(req, res, params) {
+    server.post("/api", async function(req, res, params) {
         let method = params.method;
         if (!method || method === '' || method.indexOf("$") >= 0) {
             res.sayError(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
@@ -189,18 +183,11 @@ function APIServer() {
             return;
         }
 
-        let auth = params.auth;
+        let auth = req.headers["Authorization"] || params.auth;
         if (auth) {
-            if (typeof auth === "string") {
-                try {
-                    auth = JSON.parse(auth);
-                } catch (err) {
-                    res.sayError(CODES.REQUEST_PARAMS_INVALID, "JSON.parse(auth) error ==> " + err.toString());
-                    return;
-                }
+            if (auth.startsWith("Bearer ")) {
+                auth = auth.substr("Bearer ".length);
             }
-        } else {
-            auth = null;
         }
 
         params = params.data;
@@ -218,6 +205,8 @@ function APIServer() {
 
         instance.preprocess(req, res, auth, params);
 
+        let doJob = service[method];
+
         if (service.config.security && service.config.security[method]) {
             let security = service.config.security[method];
 
@@ -229,37 +218,34 @@ function APIServer() {
 
             req.callAPI = callAPI.bind(req);
 
-            instance.handleUserSession(req, res, function(flag, user) {
-                if (user && user.isLogined) {
-                    res.setAuth(user);
-                }
-
-                if (!flag) {
-                    if (security.needLogin !== true) {
-                        service[method](req, res, params, user);
-                    } else {
-                        res.setAuth(null);
-                        res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
-                    }
-                } else {
-                    if (security.allow) {
-                        instance.AuthorityChecker.check(user, security.allow, function(err, checkResult) {
-                            if (checkResult) {
-                                service[method](req, res, params, user);
-                            } else {
-                                res.setAuth(null);
-                                res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+            instance.handleUserSession(req, res, auth, security).then(async user => {
+                try {
+                    if (user && user.isLogined) {
+                        if (security.allow) {
+                            try {
+                                await instance.AuthorityChecker.check(user, security.allow);
+                            } catch (err) {
+                                return res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
                             }
-                        });
-                    } else {
-                        service[method](req, res, params, user);
+                        }
+                    } else if (security.needLogin) {
+                        return res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
                     }
+                    let ret = await doJob(params, user, req, res);
+                    res.sayOK(ret);
+                } catch (err) {
+                    res.sayError(err);
                 }
-            }, function(err) {
+            }).catch(err => {
                 res.sayError(CODES.SERVER_ERROR, err);
-            }, auth, security);
+            });
         } else {
-            service[method](req, res, params);
+            try {
+                let ret = await doJob(params, {}, req, res);
+                res.sayOK(ret);
+            } catch (err) {
+                res.sayError(err);
+            }
         }
     });
 
@@ -298,47 +284,23 @@ function APIServer() {
         }
     }
 
-    this.handleUserSession = function(req, res, next, error, auth) {
+    this.handleUserSession = function(req, res, auth) {
+        return new Promise((resolve) => {
+            let user = { isLogined:false };
 
-        let user = { isLogined:false };
+            if (!auth) return resolve(user);
 
-        let userid = auth ? auth.userid : null;
+            this.Session.check(auth, (err, sess) => {
+                if (err) return resolve(user);
 
-        if (userid) {
-            let token = auth ? auth.token : null;
-            let tokentimestamp = Number(auth ? auth.tokentimestamp : 0);
-            if (!token || !tokentimestamp || tokentimestamp <= 0) {
-                //no cookies...
-                next(0, user);
-            } else {
-                this.Session.check(userid, token, function(err, sess) {
-                    if (err) {
-                        error(err);
-                    } else {
-                        if (sess) {
-                            //get user info from cache
-                            Model.cacheRead(["user_info", userid], function(uc) {
-                                if (uc) {
-                                    user = uc;
-                                }
-                                user.isLogined = true;
-                                user.id = userid;
-                                user.userid = userid;
-                                user.token = token;
-                                user.tokentimestamp = tokentimestamp;
-                                user.extra = sess.extra || {};
-                                user.type = parseInt(sess.type);
-                                next(1, user);
-                            });
-                        } else {
-                            next(0, user);
-                        }
-                    }
-                });
-            }
-        } else {
-            next(0, user);
-        }
+                user = sess;
+                user.isLogined = true;
+                user.id = user.userid;
+                user.auth = auth;
+                
+                resolve(user);
+            });
+        });
     }
 
     this.start = function(setting, callBack) {
@@ -378,24 +340,22 @@ function APIServer() {
                     for (let key in service) {
                         let val = service[key];
                         if (typeof val != "function" || key.indexOf("$") == 0) continue;
-                        if (val.valueOf().toString().indexOf("(req, res,") > 0) {
-                            let security = service.config.security && service.config.security[key] ? service.config.security[key] : {};
-                            let def = { name: service.config.name + "." + key, security:security, index:methods.length, desc:"", paramsDesc:{} };
-                            methods.push(def);
+                        let security = service.config.security && service.config.security[key] ? service.config.security[key] : {};
+                        let def = { name: service.config.name + "." + key, security:security, index:methods.length, desc:"", paramsDesc:{} };
+                        methods.push(def);
 
-                            //parse comments
-                            let comment = scripts.match(new RegExp("//@" + key + "( )+.*[\r\n]+"));
-                            if (comment && comment[0]) {
-                                comment = comment[0].trim();
-                                let args = comment.match(new RegExp("@[a-zA-Z0-9]+( )+[^@\r\n]+", "g"));
-                                if (args && args.length > 0) {
-                                    def.desc = args[0].substring(args[0].indexOf(" ")).trim();
-                                    if (args.length > 1) {
-                                        for (let i = 1; i < args.length; i++) {
-                                            let argName = args[i].substring(1, args[i].indexOf(" ")).trim();
-                                            let argDesc = args[i].substring(args[i].indexOf(" ")).trim();
-                                            def.paramsDesc[argName] = argDesc;
-                                        }
+                        //parse comments
+                        let comment = scripts.match(new RegExp("//@" + key + "( )+.*[\r\n]+"));
+                        if (comment && comment[0]) {
+                            comment = comment[0].trim();
+                            let args = comment.match(new RegExp("@[a-zA-Z0-9]+( )+[^@\r\n]+", "g"));
+                            if (args && args.length > 0) {
+                                def.desc = args[0].substring(args[0].indexOf(" ")).trim();
+                                if (args.length > 1) {
+                                    for (let i = 1; i < args.length; i++) {
+                                        let argName = args[i].substring(1, args[i].indexOf(" ")).trim();
+                                        let argDesc = args[i].substring(args[i].indexOf(" ")).trim();
+                                        def.paramsDesc[argName] = argDesc;
                                     }
                                 }
                             }
