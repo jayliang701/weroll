@@ -150,6 +150,10 @@ Session.prototype.check = function (auth, callBack) {
     return new Promise(async (resolve, reject) => {
         // invalid auth - synchronous
         try {
+            if (!this.config.secret) {
+                throw Error.create(CODES.SESSION_ERROR, 'session is not configed correctly');
+            }
+
             let decoded = JWT.verify(auth, this.config.secret);
             let key = this.formatKey(decoded.id, decoded.time);
             let payload = await this.readPayload(key);
