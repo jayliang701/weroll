@@ -54,6 +54,10 @@ var checkFolder = function(path, handler) {
 
 exports.Schema = Schema;
 
+exports.getInstance = function() {
+    return mongooseInstance;
+}
+
 exports.init = function(owner) {
     owner = owner || Model.getDBByName();
     mongooseInstance = owner;

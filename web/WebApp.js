@@ -1,52 +1,49 @@
 /**
  * Created by Jay on 3/24/15.
  */
-var PATH = require("path");
-var FS = require("fs");
-var UTIL = require("util");
+const PATH = require("path");
+const FS = require("fs");
 
-var Model = require("./../model/Model");
-var Session = require("./../model/Session");
-var Utils = require("./../utils/Utils");
-var CODES = require("./../ErrorCodes");
-var Profiler = require("../utils/Profiler");
-var WRP = require("./WebRequestPreprocess");
+const Session = require("./../model/Session");
+const Utils = require("./../utils/Utils");
+const CODES = require("./../ErrorCodes");
+const WRP = require("./WebRequestPreprocess");
 
-var ParamsChecker = require("../utils/ParamsChecker");
-var AuthorityChecker = require("../utils/AuthorityChecker");
+const ParamsChecker = require("../utils/ParamsChecker");
+const AuthorityChecker = require("../utils/AuthorityChecker");
 
-var EXPRESS  = require('express');
-var BODY_PARSER = require('body-parser');
-var METHOD_OVERRIDE = require('method-override');
-var COOKIE = require("cookie-parser");
+const EXPRESS  = require('express');
+const BODY_PARSER = require('body-parser');
+const METHOD_OVERRIDE = require('method-override');
+const COOKIE = require("cookie-parser");
 
-var isRunning = false;
+let isRunning = false;
 
-var App = EXPRESS();
+const App = EXPRESS();
 App.maxSockets = Infinity;
-var Server = require('http').createServer(App);
+const Server = require('http').createServer(App);
 App.$server = Server;
 
-var SERVICE_MAP = { };
+const SERVICE_MAP = { };
 
-var ROUTER_MAP = { };
+const ROUTER_MAP = { };
 
-var APP_SETTING;
-var API_SESSION_AUTH_ONLY = false;
+let APP_SETTING;
+let API_SESSION_AUTH_ONLY = false;
 
-var callAPI = function(method, params) {
-    var req = this;
-    var user = typeof arguments[2] === "function" ? null : arguments[2];
+const callAPI = function(method, params) {
+    let req = this;
+    let user = typeof arguments[2] === "function" ? null : arguments[2];
     if (typeof user !== "object") user = null;
-    var callBack = typeof arguments[2] === "function" ? arguments[2] : arguments[3];
+    let callBack = typeof arguments[2] === "function" ? arguments[2] : arguments[3];
     if (typeof callBack !== "function") callBack = null;
     method = method.split(".");
 
     return new Promise(function (resolve, reject) {
 
-        var service = SERVICE_MAP[method[0]];
+        let service = SERVICE_MAP[method[0]];
         if (!service || !service.hasOwnProperty(method[1])) {
-            var err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
+            let err = Error.create(CODES.NO_SUCH_METHOD, "NO_SUCH_METHOD");
             if (callBack) return callBack(err);
             return reject(err);
         }
@@ -206,7 +203,7 @@ function registerRouter(router) {
 
     App.all(router.url, function (req, res) {
 
-        var r = router;
+        let r = router;
         if (r.mobile) {
             req.__isMobile = Utils.isFromMobile(req);
             if (req.__isMobile && ROUTER_MAP[r.mobile]) {
@@ -269,7 +266,12 @@ function registerRouter(router) {
                         }
                     };
                 };
-                let result = r_handle(req, res, func, user);
+                let result;
+                try {
+                    result = await r_handle(req, res, func, user);
+                } catch (err) {
+                    return output(null, user, null, err);
+                }
                 if (result !== undefined && result !== null && (typeof result === "object" || result instanceof Array)) {
                     func(result);
                 }
@@ -326,7 +328,7 @@ exports.start = function(setting, callBack) {
         });
     }
 
-    var apiCompress = setting.compress ? setting.compress.api : false;
+    let apiCompress = setting.compress ? setting.compress.api : false;
 
     App.COMMON_RESPONSE_DATA = {
         "ENV": setting.env,
@@ -345,42 +347,42 @@ exports.start = function(setting, callBack) {
 
     Session.getSharedInstance().init(setting.session);
 
-    var location = setting.location || {};
-    var serverPath = location.server || "server";
-    var routerPath = location.router || `${serverPath}/router`;
-    var servicePath = location.service || `${serverPath}/service`;
-    var clientPath = location.client || "client";
-    var defaultViewPath = PATH.join(global.APP_ROOT, "client/dist/views");
+    let location = setting.location || {};
+    let serverPath = location.server || "server";
+    let routerPath = location.router || `${serverPath}/router`;
+    let servicePath = location.service || `${serverPath}/service`;
+    let clientPath = location.client || "client";
+    let defaultViewPath = PATH.join(global.APP_ROOT, clientPath, "dist/views");
     if (!Utils.fileExistsSync(defaultViewPath)) {
-        defaultViewPath = PATH.join(global.APP_ROOT, "client/views");
+        defaultViewPath = PATH.join(global.APP_ROOT, clientPath, "views");
         if (!Utils.fileExistsSync(defaultViewPath)) {
             defaultViewPath = null;
         }
     }
 
-    var viewPath = location.view || defaultViewPath;
+    let viewPath = location.view || defaultViewPath;
 
-    var defaultStaticResPath = PATH.join(global.APP_ROOT, "client/dist/res");
+    let defaultStaticResPath = PATH.join(global.APP_ROOT, clientPath, "dist/res");
     if (!Utils.fileExistsSync(defaultStaticResPath)) {
-        defaultStaticResPath = PATH.join(global.APP_ROOT, "client/res");
+        defaultStaticResPath = PATH.join(global.APP_ROOT, clientPath, "res");
         if (!Utils.fileExistsSync(defaultStaticResPath)) {
             defaultStaticResPath = null;
         }
     }
 
-    var staticResPath = location.res || defaultStaticResPath;
+    let staticResPath = location.res || defaultStaticResPath;
     if (staticResPath) {
         App.use(EXPRESS.static(staticResPath));
     }
     console.log('use view folder: ' + viewPath);
     console.log('use static res folder: ' + staticResPath);
 
-    var doRegisterRouter = function(path, file) {
+    let doRegisterRouter = function(path, file) {
         path = path.replace(global.APP_ROOT, "").replace("\\" + serverPath + "\\", "").replace("/" + serverPath + "/", "").replace("\\", "/");
         if (file.indexOf("__") === 0 && !global.VARS.debug) return;
-        var router = global.requireModule(path + "/" + file);
+        let router = global.requireModule(path + "/" + file);
         if (router.hasOwnProperty('getRouterMap') && router.getRouterMap) {
-            var map = router.getRouterMap();
+            let map = router.getRouterMap();
             map.forEach(function(r) {
                 //if (r.handle) inject(r.handle);
                 //if (r.postHandle) inject(r.postHandle);
@@ -390,16 +392,16 @@ exports.start = function(setting, callBack) {
         }
     }
 
-    var doRegisterService = function(path, file) {
+    let doRegisterService = function(path, file) {
         path = path.replace(global.APP_ROOT, "").replace("\\" + serverPath + "\\", "").replace("/" + serverPath + "/", "").replace("\\", "/");
-        var service = global.requireModule(path + "/" + file);
+        let service = global.requireModule(path + "/" + file);
         if (service.config && service.config.name && service.config.enabled == true) {
             SERVICE_MAP[service.config.name] = service;
         }
     }
 
-    var checkFolder = function(path, handler) {
-        var files = [];
+    let checkFolder = function(path, handler) {
+        let files = [];
         try {
             files = FS.readdirSync(path);
         } catch (exp) {
@@ -415,15 +417,15 @@ exports.start = function(setting, callBack) {
     }
 
     //init routers
-    var routerFolder = PATH.join(global.APP_ROOT, routerPath);
+    let routerFolder = PATH.join(global.APP_ROOT, routerPath);
     if (Utils.fileExistsSync(routerFolder)) {
-        var viewEngine;
-        var viewCache = String(global.VARS.viewCache) === "true";
+        let viewEngine;
+        let viewCache = String(global.VARS.viewCache) === "true";
         if (setting.viewEngine && setting.viewEngine.init) {
             viewEngine = setting.viewEngine.init(App, viewPath, viewCache);
         } else {
-            var nunjucks = require("nunjucks");
-            var nunjucksEnv = nunjucks.configure(viewPath, {
+            let nunjucks = require("nunjucks");
+            let nunjucksEnv = nunjucks.configure(viewPath, {
                 autoescape: true,
                 express: App,
                 noCache: !viewCache,
@@ -452,12 +454,12 @@ exports.start = function(setting, callBack) {
     }
 
     //init services
-    var serviceFolder = PATH.join(global.APP_ROOT, servicePath);
+    let serviceFolder = PATH.join(global.APP_ROOT, servicePath);
     if (Utils.fileExistsSync(serviceFolder)) {
         checkFolder(PATH.join(global.APP_ROOT, servicePath), doRegisterService);
     }
 
-    var port = setting.port;
+    let port = setting.port;
     /**
     if (setting.clusterMode == "inc_port") {
         port = port + (parseInt(global.workerID) || 0);
