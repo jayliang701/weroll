@@ -48,17 +48,33 @@ exports.config = {
         //@hello 打个招呼 @name 名字 @gender 性别,1-男,2-女
         "hello":{ needLogin:false, checkParams:{ name:"string" }, optionalParams:{ gender:"int" } },
         //@bye 说再见 @name 名字
-        "bye":{ needLogin:false, optionalParams:{ name:"string" } }
+        "bye":{ needLogin:false, optionalParams:{ name:"string" } },
+        //@ip 获取当前登录用户的IP地址
+        "ip":{ needLogin:true }
     }
 };<br>
-exports.hello = function(req, res, params) {
-    var name = params.name;
-    var gender = params.gender;
-    res.sayOK({ msg:&#96;欢迎, 你的名字是${name}, 性别是${gender == 1 ? "男" : "女"}&#96; });
+exports.hello = (params) => {
+    let { name, gender } = params.name;
+    return { msg:&#96;欢迎, 你的名字是${name}, 性别是${gender == 1 ? "男" : "女"}&#96; };
 }<br>
-exports.bye = function(req, res, params) {
-    var name = params.name || "陌生人";
-    res.sayOK({ msg:&#96;再见, ${name}&#96; });
+//异步接口
+exports.bye = async (params) => {
+    let name = params.name || "陌生人";
+    let asyncJob = (name) => {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve({ msg:&#96;再见, ${name}&#96; });
+            }, 200);
+        });
+    }
+    let result = await asyncJob();
+    return result;
+}<br>
+//使用user, req, res参数
+exports.ip = (params, user, req, res) => {
+    let result = { msg:&#96;用户: [${user.id}], IP: ${req._clientIP}&#96; };
+    // res.sayOK(result);   // 等同于直接return
+    return result;
 }</code></pre>
 
 通过以上代码，我们定义了一组前缀为<b>user</b>的接口，并创建了2个具体的方法 <b>user.hello</b> 和<b>user.bye</b><br>

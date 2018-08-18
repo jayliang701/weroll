@@ -25,9 +25,9 @@ parent: guide
 <br>
 <h4><a name="sess">Session</a></h4>
 weroll内置了Session管理功能，使用 <b>weroll/model/Session</b> 对象可以对用户的登录会话进行管理和校验。<br>
-weroll的Session采用的是令牌校验的机制，即当用户登录成功之后，weroll生成一个16位的随机字符串作为令牌(以下我们称为token)，并将token传递给客户端，客户端在随后每一次API请求或页面请求都会附带这个token，weroll会对它做验证，以维护用户会话的状态。<br>
-对于WebApp来说，会话Token将存放在客户端的cookie中。 <br>
-对于APIServer来说，Token需要显式的返回给客户端(例如通过一个login的API响应Token给客户端)，由客户端决定以何种方式存储它。 随后的每次API请求，客户端都需要将Token连同请求数据一起发送给服务器。<br>
+weroll的Session采用的是JsonWebToken机制（简称JWT），关于JWT的机制，请阅读<a href="https://jwt.io/introduction/" target="_blank">《Introduction to JSON Web Tokens》</a>。<br>
+对于WebApp的页面路由请求说，JWT令牌将存放在客户端的cookie中。 <br>
+对于APIServer来说，JWT令牌可以附加在请求头或请求参数的auth属性中。<br>
 <br>
 <br>
 启用Session:<br>
@@ -38,6 +38,8 @@ module.exports ={
     ...
     session: {
             /* user access session config. enable redis first */
+            secret:"your jwt secret",    //jwt secret
+            storage: "mongodb",    //redis, mongodb
             onePointEnter:true,    //whether allow create session in multi client device
             cookiePath:"/",      //cookie path for client browser
             cacheExpireTime:3 * 60,     //session cache expire time, sec
@@ -49,7 +51,7 @@ module.exports ={
 ```
 
 <br>
-其中有3个重要的参数设置：<br>
+其中有几个重要的参数设置：<br>
 <table class="doc">
     <thead>
         <tr>
@@ -58,6 +60,14 @@ module.exports ={
         </tr>
     </thead>
     <tbody>
+        <tr>
+            <td><b>session.secret</b></td>
+            <td>JsonWebToken（JWT）的密钥字符串。</td>
+        </tr>
+        <tr>
+            <td><b>session.storage</b></td>
+            <td>使用何种持久化方式存储用户session，提供redis或mongodb两种方式，默认为redis。</td>
+        </tr>
         <tr>
             <td><b>session.onePointEnter</b></td>
             <td>作用是是否允许同一个用户在多个客户端创建会话，如果为true则表示不允许，最近一次用户创建会话会覆盖之前创建的会话信息，使其他客户端失去访问权限。</td>
@@ -72,7 +82,7 @@ module.exports ={
         </tr>
     </tbody>
 </table>
-使用Session必须要配置Redis连接，请参考 <a href="http://localhost:8900/guide/redis/" target="_blank">Guide - Redis</a>
+使用Session必须要配置Redis连接，请参考 <a href="http://weroll.magicfish.cn/guide/redis/" target="_blank">Guide - Redis</a>
 <br>
 <br>
 <h4><a name="sess_save">创建登录会话</a></h4>
@@ -80,46 +90,45 @@ module.exports ={
 
 ```js
 //得到了用户的id（或者_id，对于MongoDB来说）
-//user --> { _id:"1001", nickname:"Jay", type:100 }
+//user --> { id:"1001", ... }
+//extra --> { nickname:"Jay", gender:1, ... }   //可选
 var Session = require("weroll/model/Session");
 
 //callback
-Session.getSharedInstance().save(user, function(err, sess) {
+Session.getSharedInstance().save(user, extra, (err, token) => {
     if (err) return console.error(err);
-    console.log(`session saved --> token: ${sess.token}     tokentimestamp: ${sess.tokentimestamp}`);
+    console.log(`session saved --> token: ${token}`);
 });
 
 //Promise
-Session.getSharedInstance().save(user).then(function(sess) {
+Session.getSharedInstance().save(user, extra).then((token) => {
     //session saved
-}).catch(function(err) {
+}).catch((err) => {
     //save error
 });
 
 //async & await
-async function() {
-    var sess = await Session.getSharedInstance().save(user);
-    console.log(`session saved --> token: ${sess.token}     tokentimestamp: ${sess.tokentimestamp}`);
+async () => {
+    const token = await Session.getSharedInstance().save(user, extra);
+    console.log(`session saved --> token: ${token}`);
 }
 ```
 
-会话创建之后，开发者需要将 <b>token</b> 和 <b>tokentimestamp</b> 交给客户端。如果你使用WebApp开发网页项目，可以将令牌数据写到客户端请求的cookie里，例如：<br>
+会话创建之后，开发者需要将 <b>token</b> 交给客户端。如果你使用WebApp开发网页项目，可以将令牌数据写到客户端请求的cookie里，例如：<br>
 
 ```js
 //after user login
 //user --> { _id:"1001", nickname:"Jay", type:100 }
 
-var sess = await Session.getSharedInstance().save(user);
+const token = await Session.getSharedInstance().save(user);
 
-var option = {
+const option = {
     //设置cookie的path参数
     path: Setting.session.cookiePath || "/",
     //设置cookie的过期时间
     expires: new Date(Date.now() + Setting.session.cookieExpireTime)
 };
-res.cookie("userid", sess.userid, option);
-res.cookie("token", sess.token, option);
-res.cookie("tokentimestamp", sess.tokentimestamp, option);
+res.cookie("authorization", token, option);
 //end this response
 ```
 
@@ -129,25 +138,25 @@ res.cookie("tokentimestamp", sess.tokentimestamp, option);
 /* ./server/service/UserService.js */
 
 //define "user.login" API
-exports.login = async function(req, res, params) {
+exports.login = async (params) => {
     //check account and password ...
     //if existed, then we get an user data
     //user --> { _id:"1001", nickname:"Jay", type:100 }
     //now we create session
-    var sess = await Session.getSharedInstance().save(user);
+    const token = await Session.getSharedInstance().save(user);
     //response token and other data to client
-    res.sayOK(sess);
+    return { token };
 }
 
 ```
 
 <br>
 <h4><a name="sess_check">Session验证</a></h4>
-客户端获得token数据后，在随后的API请求或页面访问等操作中，需要把<b>userid</b>, <b>token</b>和<b>tokentimestamp</b>这3个数据提交给服务器进行验证。weroll并不关心客户端如何存储和管理token数据，你可以存放在cookie里，或者LocalStorage里，或者是移动设备的本地文件里。<br>
+客户端获得token数据后，在随后的API请求或页面访问等操作中，需要把<b>token</b>提交给服务器进行验证。weroll并不关心客户端如何存储和管理token数据，你可以存放在cookie里，或者LocalStorage里，或者是移动设备的本地文件里。<br>
 <br>
-对于使用WebApp来说，如果创建会话后将token等数据写到了客户端cookie里，那么客户端并不需要做什么特别的处理，浏览器会自动在每次请求时附带cookie数据。weroll会自动从请求的cookie中获得token并进行校验。<br>
+对于使用WebApp来说，如果创建会话后将token写到了客户端cookie里，那么客户端并不需要做什么特别的处理，浏览器会自动在每次请求时附带cookie数据。weroll会自动从请求的cookie中获得token并进行校验。<br>
 <br>
-如果你使用APIServer，可以将token等数据连同API请求参数一起提交给服务器进行校验，示例代码如下：<br>
+如果你使用APIServer，可以将token等数据连同API请求参数一起提交给服务器进行校验或者遵循JWT的实现标准，附加在请求头Authorization里，示例代码如下：<br>
 
 ```js
 /* client side */
@@ -157,18 +166,15 @@ var params = {};
 params.method = "user.changeHead";
 //set api request data
 params.data = { "head":"123.jpg" };
-//submit token data
-params.auth = {
-    userid:"YOUR_USER_ID",
-    token:"YOUR_TOKEN",
-    tokentimestamp:"YOUR_TOKEN_TIMESTAMP"
-};
+//submit token
+params.auth = "your jwt string";    // option 1
 
 $.ajax({
     type: "post",
     url: "http://localhost:3000/api",
     headers: {
-        "Content-Type": "application/json; charset=UTF-8"
+        "Content-Type": "application/json; charset=UTF-8",
+        "Authorization": "your jwt string"    // option 2
     },
     data: JSON.stringify(params),
     success: function (data, status, xhr) {
@@ -198,10 +204,9 @@ exports.config = {
     }
 };
 
-exports.hello = function(req, res, params, user) {
+exports.hello = (params, user) =>{
     //user 对象则是 Session.save 时传递的数据
     console.log("user id: ", user.id);  //or user.userid
-    console.log("user token: ", user.token);
     //some codes ...
 }
 
@@ -225,18 +230,18 @@ exports.getRouterMap = function() {
 <br>
 <h3>进阶技巧</h3>
 <h4><a name="cache">缓存更多的用户数据</a></h4>
-假设API或View Router的业务逻辑，经常需要使用用户的某些数据，而又不会经常发生变化的，例如昵称，性别，头像等。可以利用创建会话 Session.save() 将这些数据和token数据缓存在一起，这样可以大量减少数据库查询和相关代码。实例如下：<br>
+假设API或View Router的业务逻辑，经常需要使用用户的某些数据，而又不会经常发生变化的，例如昵称，性别，头像等。可以利用创建会话 Session.save() 将这些数据和token缓存在一起，这样可以大量减少数据库查询和相关代码。实例如下：<br>
 
 ```js
 /* Session.save */
 //query from Database: userData --> { _id:"1001", nickname:"Jay", head:"123.jpg", arg1:{...}, type:100 }
-var Session = require("weroll/model/Session");
+const Session = require("weroll/model/Session");
 
-var user = { userid:userData._id, type:userData.type };
-user.extra = [ userData.nickname, userData.head, userData.arg1 ];
+const user = { userid:userData._id, type:userData.type };
+const extra = { nickname: userData.nickname, head: userData.head, key1:userData.arg1 };
 
 //callback
-Session.getSharedInstance().save(user);
+Session.getSharedInstance().save(user, extra);
 
 /////////////////////////////////////////////////////////////
 
@@ -244,9 +249,9 @@ Session.getSharedInstance().save(user);
 function renderSomePage(req, res, output, user) {
     console.log("user id: ", user.id);  //or user.userid
     //use extra to get more properties of user
-    console.log("user nickname: ", user.extra[0]);
-    console.log("user head: ", user.extra[1]);
-    console.log("user arg1: ", user.extra[2]);
+    console.log("user nickname: ", user.nickname);
+    console.log("user head: ", user.head);
+    console.log("user arg1: ", user.key1);
     //output({ ... });
 }
 ```
@@ -310,10 +315,10 @@ exports.getRouterMap = function() {
 
 ```js
 /* somewhere */
-var AuthorityChecker = require("weroll/utils/AuthorityChecker");
+const AuthorityChecker = require("weroll/utils/AuthorityChecker");
 
 //define check function
-var vipLevelCheck = function(user, allow, callBack) {
+const vipLevelCheck = function(user, allow, callBack) {
     //allow --> { vipLevel:"..." }
 
     /* Async check:
@@ -327,7 +332,7 @@ var vipLevelCheck = function(user, allow, callBack) {
 
     /* Sync check */
     //eval("user.vipLevel >= N")
-    var result = eval(user.vipLevel + allow.vipLevel);
+    const result = eval(user.vipLevel + allow.vipLevel);
     //must execute callBack(true or false) to end this check
     callBack(result);
 }
@@ -336,7 +341,7 @@ var vipLevelCheck = function(user, allow, callBack) {
 AuthorityChecker.register("custom", vipLevelCheck);
 ```
 
-检查器中的user参数时 <b>Session.getSharedInstance().save(user)</b> 时的用户数据，你可以把经常需要用来做权限检查的数据，在save是存放在 <b>user.extra</b> 对象中，以减少访问数据库的次数。
+检查器中的user参数时 <b>Session.getSharedInstance().save(user, extra)</b> 时的用户数据，你可以把经常需要用来做权限检查的数据，在save是存放在 <b>extra</b> 对象中，以减少访问数据库的次数。
 <br><br>
 现在当用户访问 vip_page 和 vip_3_page 这2个页面时，就会对用户的vipLevel值进行检查。检查失败和登录检查失败一样，请求将被重定向到login页面；如果是API，检查失败则会返回 NO_PERMISSION 错误。
 <br>
@@ -351,11 +356,11 @@ weroll允许开发者完全定义Session检查，只需要重写 <b>WebApp</b> �
 ```js
 //user login successfully
 //user --> { _id:"1001", nickname:"Jay", type:100 }
-var Model = require("weroll/model/Model");
-var Utils = require("weroll/utils/Utils");
+const Model = require("weroll/model/Model");
+const Utils = require("weroll/utils/Utils");
 
-var token = Utils.randomString(16);
-var now = Date.now();
+const token = Utils.randomString(16);
+const now = Date.now();
 //upsert a session data into "__session" table of MongoDB
 Model.DB.update("__session", { _id:user._id, token:token, tokentimestamp:now }, { upsert:true });
 ```
@@ -368,18 +373,19 @@ var Session = require("weroll/model/Session");
 
 exports.extend = function(webApp) {
     //override "handleUserSession" method
-    webApp.handleUserSession = function(req, res, next, error, auth) {
-        var user = { isLogined:false };
-        //find session data from MongoDB
-        Model.DB.findOne("__session", { _id:auth.userid, token:auth.token }, function(err, doc) {
-            if (err) return error(err, user);
-            if (doc) {
-                //session passed
-                next(1, user);
-            } else {
-                //no session
-                next(0, user);
-            }
+    webApp.handleUserSession = (req, res, token) => {
+        return new Promise(resolve => {
+            const user = { isLogined:false };
+            //find session data from MongoDB
+            Model.DB.findOne("__session", { _id:auth.userid, token:token }, (err, doc) => {
+                if (err) return error(err, user);
+                if (doc) {
+                    //session passed
+                    user.isLogined = true;
+                    user.id = doc._id;
+                }
+                resolve(user);
+            });
         });
     };
 }
@@ -388,7 +394,7 @@ exports.extend = function(webApp) {
 ```js
 /* ./main.js */
 //create and start a web application
-var webApp = require("weroll/web/WebApp").start(Setting, function(webApp) {
+const webApp = require("weroll/web/WebApp").start(Setting, function(instance) {
     //do something after HTTP service initialized.
     cb();
 });
