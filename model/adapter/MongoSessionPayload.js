@@ -1,6 +1,8 @@
 
 const Model = require("../Model");
 const SessionPayload = require("./SessionPayload");
+const DAOFactory = require('../../dao/DAOFactory');
+const Schema = DAOFactory.Schema;
 
 const TABLE = "session";
 
@@ -54,29 +56,42 @@ class NativeAgent {
 }
 
 class MongooseAgent {
+
+    constructor() {
+        const schema = new Schema({
+            _id: String,
+            _expireAt: Date,
+            userid: String
+        }, { collection:TABLE, strict: false, versionKey:false });
+        schema.index({ userid:1 });
+        schema.index({ _expireAt:1 }, { expireAfterSeconds:0 });
+
+        this.table = DAOFactory.getInstance().model(TABLE, schema);
+    }
+
     buildIndexes() {
-        Model.DB.getIndexes(TABLE, (err, result) => {
-            if (err) return console.error(err);
-            if (!result || !result["userid_1"]) Model.DB.ensureIndex(TABLE, "userid");
-            if (!result || !result["_expireAt_1"]) Model.DB.ensureIndex(TABLE, "_expireAt", { expireAfterSeconds:0 });
-            
-        });
+        
     }
 
     savePayload (key, payload, expireTime) {
         let date = new Date();
         date.setTime(Date.now() + expireTime * 1000);
-        return Model.DB.update(TABLE, { _id:key }, { _id:key, ...payload, _expireAt: date }, { upsert: true });
+        return this.table.update({ _id:key }, { _id:key, ...payload, _expireAt: date }, { upsert: true });
     }
     
     readPayload (key) {
-        return Model.DB.findOne(TABLE, { _id: key }).then((payload) => {
+        return this.table.findOne({ _id: key }).then((payload) => {
+            if (payload) {
+                payload = payload.toObject();
+                delete payload["_id"];
+                delete payload["_expireAt"];
+            }
             return Promise.resolve(payload);
         });
     }
     
     removePayload (key) {
-        return Model.DB.remove(TABLE, { _id: key }).then(() => {
+        return this.table.remove({ _id: key }).then(() => {
             return Promise.resolve();
         });
     }
@@ -86,7 +101,7 @@ class MongooseAgent {
             if (this.session.config.onePointEnter) {
                 return reject([this.session.formatKey(userid)]);
             }
-            Model.DB.find(TABLE, { userid }, { _id:1 }, (err, docs) => {
+            this.table.find({ userid }, { _id:1 }, (err, docs) => {
                 if (err) return reject(err);
                 resolve(docs.map(doc => doc._id));
             });
@@ -96,7 +111,7 @@ class MongooseAgent {
     refreshPayloadExpireTime (key, expireTime) {
         let date = new Date();
         date.setTime(Date.now() + expireTime * 1000);
-        return Model.DB.update(TABLE, { _id: key }, { _expireAt: date }).then(() => {
+        return this.table.update({ _id: key }, { _expireAt: date }).then(() => {
             return Promise.resolve();
         });
     }
@@ -107,8 +122,7 @@ class MongoSessionPayload extends SessionPayload {
     constructor(option) {
         super();
 
-        const mongoose = require("mongoose");
-        if (Model.DB.engine.__driver === mongoose) {
+        if (DAOFactory.getInstance()) {
             this.agent = new MongooseAgent();
         } else {
             this.agent = new NativeAgent();
@@ -124,51 +138,27 @@ class MongoSessionPayload extends SessionPayload {
     }
 
     buildIndexes() {
-        this.table.indexInformation((err, result) => {
-            if (err) return console.error(err);
-            console.log(result);
-            if (!result || !result["userid_1"]) Model.DB.ensureIndex(TABLE, "userid");
-            if (!result || !result["_expireAt_1"]) Model.DB.ensureIndex(TABLE, "_expireAt", { expireAfterSeconds:0 });
-            
-        });
+        return this.agent.buildIndexes();
     }
 
     savePayload (key, payload, expireTime) {
-        let date = new Date();
-        date.setTime(Date.now() + expireTime * 1000);
-        return Model.DB.update(TABLE, { _id:key }, { _id:key, ...payload, _expireAt: date }, { upsert: true });
+        return this.agent.savePayload(key, payload, expireTime);
     }
     
     readPayload (key) {
-        return Model.DB.findOne(TABLE, { _id: key }).then((payload) => {
-            return Promise.resolve(payload);
-        });
+        return this.agent.readPayload(key);
     }
     
     removePayload (key) {
-        return Model.DB.remove(TABLE, { _id: key }).then(() => {
-            return Promise.resolve();
-        });
+        return this.agent.removePayload(key);
     }
     
     findAllPayloadKeys (userid) {
-        return new Promise((resolve, reject) => {
-            if (this.session.config.onePointEnter) {
-                return reject([this.session.formatKey(userid)]);
-            }
-            Model.DB.find(TABLE, { userid }, { _id:1 }, (err, docs) => {
-                if (err) return reject(err);
-                resolve(docs.map(doc => doc._id));
-            });
-        });
+        return this.agent.findAllPayloadKeys(userid);
     }
     
     refreshPayloadExpireTime (key, expireTime) {
-        let date = new Date();
-        date.setTime(Date.now() + expireTime * 1000);
-        return Model.DB.update(TABLE, { _id: key }, { _expireAt: date }).then(() => {
-            return Promise.resolve();
-        });
+        return this.agent.refreshPayloadExpireTime(key, expireTime);
     }
 }
 

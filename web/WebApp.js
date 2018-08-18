@@ -266,7 +266,12 @@ function registerRouter(router) {
                         }
                     };
                 };
-                let result = r_handle(req, res, func, user);
+                let result;
+                try {
+                    result = await r_handle(req, res, func, user);
+                } catch (err) {
+                    return output(null, user, null, err);
+                }
                 if (result !== undefined && result !== null && (typeof result === "object" || result instanceof Array)) {
                     func(result);
                 }
