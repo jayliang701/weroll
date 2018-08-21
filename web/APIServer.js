@@ -183,7 +183,7 @@ function APIServer() {
             return;
         }
 
-        let auth = req.headers["Authorization"] || params.auth;
+        let auth = (req.headers["authorization"] || req.headers["Authorization"]) || params.auth;
         if (auth) {
             if (auth.startsWith("Bearer ")) {
                 auth = auth.substr("Bearer ".length);

@@ -277,7 +277,6 @@
                     if (sess.token) {
                         console.log("发现登录会话token, 已切换到此账户");
                         localStorage.setItem("auth", sess.token);
-                        localStorage.flush();
                     } else {
                         console.warn("无法识别登录会话token");
                     }
