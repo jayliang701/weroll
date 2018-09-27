@@ -228,9 +228,9 @@ function registerRouter(router) {
             const output = function(view, user, data, err) {
                 data = data ? data : {};
                 if (err) {
-                    res.render("error", { setting:App.COMMON_RESPONSE_DATA, err, user, now, query:req.query });
+                    res.render("error", { setting:App.COMMON_RESPONSE_DATA, err, user, now, query:req.query, ...App.injectRenderArguments(view, user, data, req, res) });
                 } else {
-                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data, user, now, query:req.query });
+                    res.render(view, { setting:App.COMMON_RESPONSE_DATA, data, user, now, query:req.query, ...App.injectRenderArguments(view, user, data, req, res) });
                 }
                 res.profile();
             }.bind(res);
@@ -299,6 +299,10 @@ App.handleUserSession = function(req, res, auth) {
             resolve(user);
         });
     });
+}
+
+App.injectRenderArguments = function(view, user, data, req, res) {
+    return null;
 }
 
 exports.start = function(setting, callBack) {
