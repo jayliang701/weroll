@@ -101,6 +101,9 @@ function sayError() {
         } else if (arguments[0].code && arguments[0].msg) {
             code = arguments[0].code;
             msg = arguments[0].msg;
+        } else if (arguments[0].hasOwnProperty("code")) {
+            code = arguments[0].code;
+            msg = arguments[0].message || arguments[0].toString();
         } else {
             code = CODES.SERVER_ERROR;
             msg = arguments[0].message || arguments[0].toString();
