@@ -288,7 +288,7 @@ function APIServer() {
         return new Promise((resolve) => {
             let user = { isLogined:false };
 
-            if (!auth) return resolve(user);
+            if (!String(auth).hasValue()) return resolve(user);
 
             this.Session.check(auth, (err, sess) => {
                 if (err) return resolve(user);

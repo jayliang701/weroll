@@ -286,7 +286,7 @@ App.handleUserSession = function(req, res, auth) {
     return new Promise((resolve) => {
         let user = { isLogined:false };
 
-        if (!auth) return resolve(user);
+        if (!String(auth).hasValue()) return resolve(user);
 
         Session.getSharedInstance().check(auth, (err, sess) => {
             if (err) return resolve(user);
