@@ -47,6 +47,30 @@ Session.prototype.savePayload = function (key, payload, expireTime) {
     return this.payloadWorker.savePayload(key, payload, expireTime);
 }
 
+Session.prototype.updateUserAllPayloads = function (userid, extra) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let keys = await this.findAllPayloadKeys(userid);
+            if (keys) {
+                let expireTime = this.config.tokenExpireTime;
+                for (let i = 0; i < keys.length; i++) {
+                    let newExtra;
+                    let oldExtra = await this.readPayload(keys[i]);
+                    if (oldExtra instanceof Array && extra instanceof Array) {
+                        newExtra = [ ...oldExtra, ...extra ];
+                    } else {
+                        newExtra = { ...oldExtra, ...extra };
+                    }
+                    await this.savePayload(keys[i], newExtra, expireTime);
+                }
+            }
+            resolve();
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
 Session.prototype.readPayload = function (key) {
     return this.payloadWorker.readPayload(key);
 }
