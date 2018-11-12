@@ -2,6 +2,7 @@
  * Created by Jay on 2016/3/4.
  */
 var mongoose = require('mongoose');
+require('mongoose-long')(mongoose);
 
 var Schema = mongoose.Schema;
 
@@ -52,6 +53,7 @@ var checkFolder = function(path, handler) {
     });
 }
 
+exports.mongoose = mongoose;
 exports.Schema = Schema;
 
 exports.getInstance = function() {
