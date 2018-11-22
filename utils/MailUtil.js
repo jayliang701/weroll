@@ -98,14 +98,15 @@ exports.send = function(to, title, content, option, callBack) {
 }
 
 exports.sendWithTemplate = function(to, templateKey, params, option, callBack) {
-    option = typeof arguments[3] == "object" ? arguments[3] : {};
-    option = option || {};
     callBack = typeof arguments[3] == "function" ? arguments[3] : arguments[4];
     if (typeof callBack != "function") callBack = null;
+    
+    option = typeof arguments[3] == "object" ? arguments[3] : {};
+    option = option || {};
 
     var tpl1 = TemplateLib.useTemplate("mail", templateKey, params);
     var tpl2 = TemplateLib.useTemplate("mail", templateKey + ".html", params);
-    exports.send(to, tpl1.title, { plain:tpl1.content, html:tpl2.content }, option, callBack);
+    return exports.send(to, tpl1.title, { plain:tpl1.content, html:tpl2.content }, option, callBack);
 }
 
 exports.setProxy = function(newProxy) {
