@@ -22,6 +22,10 @@ weroll用法如下：
 $ weroll init {模板} {项目/目录名称}</code></pre>
 例如在命令行当前目录下，使用mini模板创建DemoApp项目：
 <pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp</code></pre>
+如果你需要使用yarn，可以在命令后面加上 --yarn 参数
+<pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp --yarn</code></pre>
+如果你需要使用国内淘宝的npm镜像源，可以在命令后面加上 --cnpm 参数
+<pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp --cnpm</code></pre>
 如果你已经建立了项目目录，如WebApp，可以进入该目录后再执行weroll init：
 <pre class="highlight"><code style="width:100%;">$ cd WebApp
 $ weroll init mini</code></pre>
