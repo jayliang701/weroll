@@ -17,10 +17,10 @@ parent: guide
 <b>ScheduleManager</b> 提供了计划任务服务，开发者可以用来实现定时任务功能，如统计过去一天的新增用户量，日均访问量，或者是定期进行数据/缓存清理，又或者是定时给运营人员发送系统邮件等等。
 <br>
 <br>
-开发者需要编写任务脚本，将脚本文件保存在 <b>./server/schedule</b> 目录下，如 <b>./server/schedule/ping_server.js</b>。同时将脚本配置到 <b>./server/config/%ENV%/schedule.config</b> 里，一个简单的schedule.config内容如下：
+开发者需要编写任务脚本，将脚本文件保存在 <b>./server/schedule</b> 目录下，如 <b>./server/schedule/ping_server.js</b>。同时将脚本配置到 <b>./server/config/%ENV%/schedule.json</b> 里，一个简单的schedule.config内容如下：
 
 ```js
-// ./server/config/%ENV%/schedule.config
+// ./server/config/%ENV%/schedule.json
 {
     "ver": "1.0.0",
     "list":[

@@ -22,8 +22,6 @@ weroll用法如下：
 $ weroll init {模板} {项目/目录名称}</code></pre>
 例如在命令行当前目录下，使用mini模板创建DemoApp项目：
 <pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp</code></pre>
-如果你需要使用cnpm，可以在命令后面加上 --cnpm 参数
-<pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp --cnpm</code></pre>
 如果你已经建立了项目目录，如WebApp，可以进入该目录后再执行weroll init：
 <pre class="highlight"><code style="width:100%;">$ cd WebApp
 $ weroll init mini</code></pre>
@@ -49,13 +47,8 @@ $ weroll init mini</code></pre>
         </tr>
         <tr>
             <td><a href="https://github.com/jayliang701/weroll-kickstarter-website" target="_blank">website</a></td>
-            <td>^node v7.0<br>async/await</td>
-            <td>网站模板项目，提供了用户账户注册、登录/登出，使用数据库创建用户数据，登录会话管理的示例</td>
-        </tr>
-        <tr>
-            <td><a href="https://github.com/jayliang701/weroll-kickstarter-game" target="_blank">game</a></td>
-            <td>^node v7.0<br>async/await</td>
-            <td>游戏服务器模板项目，提供了用户账户注册、登录/登出，多房间实时聊天</td>
+            <td>^node v7.0<br>async/await<br>MongoDB</td>
+            <td>网站模板项目，提供了用户账户注册、登录/登出，使用MongoDB数据库创建用户数据，登录会话管理的示例</td>
         </tr>
     </tbody>
 </table>
