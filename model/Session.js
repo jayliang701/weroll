@@ -188,7 +188,13 @@ Session.prototype.check = function (auth, callBack) {
             if (callBack) return callBack(null, payload);
             resolve(payload);
         } catch (err) {
-            if (err.code !== CODES.SESSION_ERROR) console.error(err);
+            if (err.code !== CODES.SESSION_ERROR) {
+                if (err instanceof JWT.JsonWebTokenError) {
+                    err.code = CODES.SESSION_ERROR;
+                } else {
+                    console.error(err);
+                }
+            }
             if (callBack) return callBack(err);
             reject(err);
         }
