@@ -596,3 +596,14 @@ exports.start = function(option, callBack) {
         }
     });
 }
+
+exports.close = function (callBack) {
+    if (!client) {
+        return callBack && callBack();
+    }
+
+    client.end(true);
+    client.quit(function () {
+        callBack && callBack();
+    });
+}
