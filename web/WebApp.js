@@ -152,7 +152,7 @@ App.post("/api", async function (req, res) {
             }
         }
 
-        App.handleUserSession(req, res, auth).then(async user => {
+        App.handleUserSession(req, res, auth, security).then(async user => {
             try {
                 if (user && user.isLogined) {
                     if (security.allow) {
@@ -218,7 +218,7 @@ function registerRouter(router) {
             }
         }
 
-        App.handleUserSession(req, res, auth).then(async user => {
+        App.handleUserSession(req, res, auth, r).then(async user => {
             const now = Date.now();
 
             if (router.needLogin && !(user && user.isLogined)) {
@@ -282,7 +282,7 @@ function registerRouter(router) {
     });
 }
 
-App.handleUserSession = function(req, res, auth) {
+App.handleUserSession = function(req, res, auth, securityOrRouter) {
     return new Promise((resolve) => {
         let user = { isLogined:false };
 
