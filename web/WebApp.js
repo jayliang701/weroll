@@ -278,6 +278,9 @@ function registerRouter(router) {
             } else {
                 output(r.view, user);
             }
+        }).catch(err => {
+            res.writeHead(500);
+            res.end(err.message ? err.message : err.toString());
         });
     });
 }
