@@ -218,7 +218,7 @@ function registerRouter(router) {
             }
         }
 
-        App.handleUserSession(req, res, auth, r).then(async user => {
+        App.handleUserSession(req, res, auth, null, r).then(async user => {
             const now = Date.now();
 
             if (router.needLogin && !(user && user.isLogined)) {
@@ -282,7 +282,7 @@ function registerRouter(router) {
     });
 }
 
-App.handleUserSession = function(req, res, auth, securityOrRouter) {
+App.handleUserSession = function(req, res, auth, security, router) {
     return new Promise((resolve) => {
         let user = { isLogined:false };
 
