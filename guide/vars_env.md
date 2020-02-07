@@ -50,10 +50,11 @@ console.log("env: ", global.VARS.env);  //echo "test"
 console.log("debug: ", global.VARS.debug);  //echo true
 ```
 
-weroll自带的<b>API调试工具</b>只有在 <b>global.VARS.debug == true</b> 的条件下才会开启，切换到开发环境时请<b>不要设置-debug</b>运行参数。
+weroll自带的<b>API调试工具</b>只有在 <b>global.VARS.debug == true</b> 的条件下才会开启，切换到生产环境时请<b>不要设置-debug</b>运行参数。
 
 <br>
 <h4><a name="env">切换运行环境</a></h4>
+weroll项目中，在 ./server/config 目录下存在一个setting.js文件，这是项目变量配置。config目录下还可能有类似localdev，test，prod等目录，不同的环境变量就配置在不同的目录下，每个环境都有一个setting.js，该setting.js文件的变量配置会将config/setting.js中的配置覆盖。因此我们可以将和运行环境无关的变量或默认变量放在config/setting.js中，将特定环境中的变量写到 config/xxx/setting.js 中。<br><br>
 weroll就是通过 <b>global.VARS.env</b> 变量来决定应用使用哪一个setting.js，默认环境是 <b>localdev</b>，开发者可根据实际需要创建其他的环境，例如：
 
 ```js

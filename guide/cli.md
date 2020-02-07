@@ -20,15 +20,13 @@ npm或cnpm全局安装weroll-cli
 weroll用法如下：
 <pre class="highlight"><code style="width:100%;">$ weroll --version
 $ weroll init {模板} {项目/目录名称}</code></pre>
-例如在命令行当前目录下，使用mini模板创建DemoApp项目：
-<pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp</code></pre>
+例如在命令行当前目录下，创建一个使用weroll框架的DemoApp项目：
+<pre class="highlight"><code style="width:100%;">$ weroll init DemoApp</code></pre>
 如果你需要使用yarn，可以在命令后面加上 --yarn 参数
-<pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp --yarn</code></pre>
+<pre class="highlight"><code style="width:100%;">$ weroll init DemoApp --yarn</code></pre>
 如果你需要使用国内淘宝的npm镜像源，可以在命令后面加上 --cnpm 参数
-<pre class="highlight"><code style="width:100%;">$ weroll init mini DemoApp --cnpm</code></pre>
-如果你已经建立了项目目录，如WebApp，可以进入该目录后再执行weroll init：
-<pre class="highlight"><code style="width:100%;">$ cd WebApp
-$ weroll init mini</code></pre>
+<pre class="highlight"><code style="width:100%;">$ weroll init DemoApp --cnpm</code></pre>
+选择你需要的项目模板，然后继续安装。
 
 <br>
 <br>
@@ -52,7 +50,7 @@ $ weroll init mini</code></pre>
         <tr>
             <td><a href="https://github.com/jayliang701/weroll-kickstarter-website" target="_blank">website</a></td>
             <td>^node v7.0<br>async/await<br>MongoDB</td>
-            <td>网站模板项目，提供了用户账户注册、登录/登出，使用MongoDB数据库创建用户数据，登录会话管理的示例</td>
+            <td>网站模板项目，提供了用户账户注册、登录/登出，使用MongoDB数据库，登录会话管理的示例</td>
         </tr>
     </tbody>
 </table>

@@ -33,7 +33,7 @@ $ node exec.js user_count 20170128
 
 <br>
 exec.js将先加载 <b>./server/config/%ENV%/setting.js</b> 里的配置数据, 如果配置有MongoDB或Redis,则建立相应的连接, 最后加载脚本文件, 开始执行里面的脚本内容.<br>
-默认exec.j会使用 <b>localdev</b> 环境下的配置文件, 如果需要使用其他的环境配置, 需要在exec.js之后加上<b>-env</b>参数, 如:<br>
+默认exec.js会使用 <b>localdev</b> 环境下的配置文件, 如果需要使用其他的环境配置, 需要在exec.js之后加上<b>-env</b>参数, 如:<br>
 
 ```bash
 $ node exec.js -env=prod user_count 20170128
@@ -48,20 +48,12 @@ $ node exec.js -env=prod user_count 20170128
 /* ./server/tools/your_script.js */
 //node exec.js your_script arg0 arg1 arg2
 
-exports.do = function(arg0, arg1, arg2) {
+exports.do = async (arg0, arg1, arg2) => {
     /*
-        sync jobs
+        sync or await jobs
     */
     //jobs done, exit
     process.done();
-
-    /* or
-    async_jobs(function() {
-        //....
-        //jobs done, exit
-        process.done();
-    });
-    */
 }
 ```
 
@@ -75,9 +67,9 @@ exports.do = function(arg0, arg1, arg2) {
 ```js
 /* ./server/tools/user_count.js */
 
-var Model = require("weroll/model/Model");
+const Model = require("weroll/model/Model");
 
-exports.do = function(date1, date2) {
+exports.do = (date1, date2) => {
     var filter = {};
     if (date1) {
         date1 = parseDate(date1);
@@ -99,15 +91,15 @@ exports.do = function(date1, date2) {
         //all user count
     }
 
-    Model.DB.count("User", filter, function(err, count) {
+    Model.DB.count("User", filter, (err, count) => {
         process.done(err ? err : `user count: ${count}`);
     });
 }
 
 function parseDate(date) {
-    var year = date.substr(0, 4);
-    var month = date.substr(4, 2);
-    var day = date.substr(6, 2);
+    const year = date.substr(0, 4);
+    const month = date.substr(4, 2);
+    const day = date.substr(6, 2);
     return new Date(year, month, day, 0, 0, 0, 0);
 }
 ```

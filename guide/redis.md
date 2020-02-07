@@ -45,7 +45,7 @@ module.exports = {
 }
 ```
 
-对于weroll应用来说，Redis连接并不是必须的，如果你不需要连接Redis，可以将model.redis节点注释。<br>
+对于weroll应用来说，Redis连接并不是必须的，如果你不需要连接Redis，可以将setting.js中的model.redis节点注释。<br>
 weroll使用的是<a href="https://www.npmjs.com/package/redis" target="_blank">redis</a>库连接和操作Redis：<br>
 <pre><code class="html">npm主页：<a href="https://www.npmjs.com/package/redis" target="&#95;blank">https://www.npmjs.com/package/redis</a></code></pre>
 <pre><code class="html">github主页：<a href="https://github.com/NodeRedis/node_redis" target="&#95;blank">https://github.com/NodeRedis/node_redis</a></code></pre>
@@ -57,13 +57,13 @@ weroll使用的是<a href="https://www.npmjs.com/package/redis" target="_blank">
 
 ```js
 // ./main.js
-var App = require("weroll/App");
-var app = new App();
-var Setting = global.SETTING;
+const App = require("weroll/App");
+const app = new App();
+const Setting = global.SETTING;
 
-app.addTask(function(cb) {
-    var Model = require("weroll/model/Model");
-    Model.init(Setting.model, function(err) {
+app.addTask((cb) => {
+    const Model = require("weroll/model/Model");
+    Model.init(Setting.model, (err) => {
         if (!err) {
             //now, mongodb & redis connection are both setup.
         }
@@ -82,30 +82,30 @@ app.run();
 weroll对redis库进行了简单的封装了，你可以使用 weroll/model/Redis 对象进行操作：<br>
 
 ```js
-var Redis = require("weroll/model/Redis");
+const Redis = require("weroll/model/Redis");
 
 //callback
-Redis.set("name", "Jay", function(err, res) {
+Redis.set("name", "Jay", (err, res) => {
     console.log(arguments);
 });
 
 //promise
-Redis.set("name", "Jay").then(function(res) {
+Redis.set("name", "Jay").then(res => {
     console.log(res);   //echo "OK"
 });
 
 //async & await
-async function() {
-    var result = await Redis.set("name", "Jay");
+async () => {
+    const result = await Redis.set("name", "Jay");
     console.log(result);   //echo "OK"
 }
 ```
 weroll/model/Redis 对象仅仅封装了一些常用的redis命令，如set, get, del和Hash操作等，如果你想使用更多的redis命令，可以使用Redis.do方法：
 
 ```js
-async function() {
+async () => {
     //Redis.do(COMMAND, [ key, arguments1, arguments2, ... ], [callBack]);
-    var result = await Redis.do("set", [ Redis.join("name"), "Jay" ]);
+    const result = await Redis.do("set", [ Redis.join("name"), "Jay" ]);
     console.log(result);   //echo "OK"
 }
 ```
@@ -114,15 +114,15 @@ async function() {
 示例代码：<br>
 
 ```js
-var tasks = [
-  [ "set", Redis.join("name"), "JayX", function(err, res) {
+const tasks = [
+  [ "set", Redis.join("name"), "JayX", (err, res) => {
       console.loe(res);   //echo "OK"
   } ],
-  [ "get", Redis.join("name"), function(err, res) {
+  [ "get", Redis.join("name"), (err, res) => {
       console.loe(res);   //echo "JayX"
   } ]
 ];
-Redis.multi(tasks, function(err) {
+Redis.multi(tasks, err => {
     err && console.error(err);
 });
 ```
@@ -162,22 +162,22 @@ Redis.set("@site->name", "JayX");
 对于Redis.do和Redis.multi操作，需要直接传递完整的key值，使用Redis.join可以得到完整的key值，示例代码如下：<br>
 
 ```js
-var Redis = require("weroll/model/Redis");
+const Redis = require("weroll/model/Redis");
 
-var fullKey = Redis.join("name");
+const fullKey = Redis.join("name");
 console.log(fullKey);  //echo "weroll_test_name"
 
 Redis.do("set", [ fullKey, "Jay" ]);
 
-var tasks = [
-  [ "get", Redis.join("name"), function(err, res) {
+const tasks = [
+  [ "get", Redis.join("name"), (err, res) => {
       console.loe(res);   //echo "JayX"
   },
-  [ "get", "name", function(err, res) {
+  [ "get", "name", (err, res) => {
       console.loe(res);   //echo undefined
   } ]
 ];
-Redis.multi(tasks, function(err) {
+Redis.multi(tasks, err => {
     err && console.error(err);
 });
 ```
@@ -187,22 +187,22 @@ Redis.multi(tasks, function(err) {
 使用 Redis.createClient 方法能够创建新的redis连接实例，返回<a href="https://www.npmjs.com/package/redis#rediscreateclient" target="_blank">RedisClient对象</a>，示例代码如下：<br>
 
 ```js
-var Redis = require("weroll/model/Redis");
+const Redis = require("weroll/model/Redis");
 
 //使用新的连接配置
-var client1 = Redis.createClient({ host:"127.0.0.1", port:6379, pass:"12346" });
+const client1 = Redis.createClient({ host:"127.0.0.1", port:6379, pass:"12346" });
 
 //使用setting.js中的连接配置
-var client2 = Redis.createClient();
+const client2 = Redis.createClient();
 
 //侦听connect事件
-var client3 = Redis.createClient(null, function(client) {
+const client3 = Redis.createClient(null, client => {
     console.log(client3 === client);  //echo true
     //do something after connection setup
 });
 //Or
-var client4 = Redis.createClient();
-client4.on("connect", function() {
+const client4 = Redis.createClient();
+client4.on("connect", () => {
     //do something after connection setup
 });
 ```
@@ -213,14 +213,14 @@ Redis消息推送和消息接收由2个不同的reids连接实例来实现，详
 示例代码如下：<br>
 
 ```js
-var Redis = require("weroll/model/Redis");
-var config = { host:"127.0.0.1", port:6379, pass:"12346" };
-Redis.createClient(config, function(sub) {
-    sub.on("message", function(channel, message) {
+const Redis = require("weroll/model/Redis");
+const config = { host:"127.0.0.1", port:6379, pass:"12346" };
+Redis.createClient(config, (sub) => {
+    sub.on("message", (channel, message) => {
         console.log(channel);   //echo "talk"
         console.log(message);   //echo "hi"
     });
-    sub.subscribe("talk", function(err) {
+    sub.subscribe("talk", (err) => {
         if (err) return console.error(err);
         Redis.publish("talk", "hi");
     });
