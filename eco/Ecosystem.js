@@ -209,6 +209,10 @@ exports.init = function(config, customSetting, callBack) {
     };
 
     var redisConfig = Setting.ecosystem.redis || global.SETTING.model.redis;
+    if (!redisConfig) {
+        callBack && callBack();
+        return
+    }
     redisSub = Redis.createClient(redisConfig);
     redisPub = Redis.createClient(redisConfig);
     redisSub.on("message", function(channel, message) {
