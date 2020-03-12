@@ -150,6 +150,31 @@ Session.prototype.removeAll = function (userid, callBack) {
     });
 }
 
+Session.prototype.extendTime = function (auth, callBack) {
+
+    callBack = arguments[arguments.length - 1];
+    if (typeof callBack !== "function") callBack = null;
+
+    let expireTime = this.config.tokenExpireTime;
+
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!this.config.secret) {
+                throw Error.create(CODES.SESSION_ERROR, 'session is not configed correctly');
+            }
+            let decoded = JWT.verify(auth, this.config.secret);
+            let key = this.formatKey(decoded.id, decoded.time);
+            await this.refreshPayloadExpireTime(key, expireTime);
+            if (callBack) return callBack();
+            resolve();
+        } catch (err) {
+            console.error(err);
+            if (callBack) return callBack(err);
+            reject(err);
+        }
+    });
+}
+
 Session.prototype.refresh = function (user, extra, callBack) {
 
     callBack = arguments[arguments.length - 1];
