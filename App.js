@@ -3,6 +3,7 @@
  */
 const CLUSTER = require('cluster');
 const PATH = require("path");
+const vm = require('vm');
 const Configuration = require("./utils/Configuration");
 const Utils = require("./utils/Utils");
 
@@ -24,6 +25,20 @@ function App() {
                 val = temp[1];
                 if (String(val) == "true") val = true;
                 else if (String(val) == "false") val = false;
+                else {
+                    let str = val;
+                    if (val.charAt(0) === "'" && val.charAt(val.length - 1) === "'") {
+                        str = val.substring(1, val.length - 1);
+                    } else if (val.charAt(0) === "\"" && val.charAt(val.length - 1) === "\"") {
+                        str = val.substring(1, val.length - 1);
+                    }
+                    try {
+                        str = vm.runInNewContext(str);
+                    } catch (err) {
+                        str = val;
+                    }
+                    val = str;
+                }
             }
             global.VARS[key] = val;
         }
@@ -58,7 +73,11 @@ App.prototype.run = function(callBack) {
         if (err) {
             console.error(":( Server startup fail :( ==> ", err);
         } else {
-            console.log("(づ￣ 3￣)づ Server startup successfully. [env: " + global.VARS.env + "]");
+            console.log(`
+ +-+-+-+-+-+-+
+ |W|E|R|O|L|L|
+ +-+-+-+-+-+-+`);
+            console.log("Server startup successfully. [env: " + global.VARS.env + "]");
         }
     });
 }
