@@ -222,10 +222,16 @@ function APIServer() {
                 try {
                     if (user && user.isLogined) {
                         if (security.allow) {
+                            let flag;
                             try {
-                                await instance.AuthorityChecker.check(user, security.allow);
+                                flag = await instance.AuthorityChecker.check(user, security.allow, req, res, security);
                             } catch (err) {
                                 return res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+                            }
+                            if (flag === -1) {
+                                //use custom fail handler
+                                //interrupt
+                                return;
                             }
                         }
                     } else if (security.needLogin) {

@@ -156,10 +156,16 @@ App.post("/api", async function (req, res) {
             try {
                 if (user && user.isLogined) {
                     if (security.allow) {
+                        let flag;
                         try {
-                            await AuthorityChecker.check(user, security.allow);
+                            flag = await AuthorityChecker.check(user, security.allow, req, res, security);
                         } catch (err) {
                             return res.sayError(CODES.NO_PERMISSION, "NO_PERMISSION");
+                        }
+                        if (flag === -1) {
+                            //use custom fail handler
+                            //interrupt
+                            return;
                         }
                     }
                 } else if (security.needLogin) {
@@ -236,10 +242,16 @@ function registerRouter(router) {
             }.bind(res);
 
             if (router.allow) {
+                let flag;
                 try {
-                    await AuthorityChecker.check(user, router.allow);
+                    flag = await AuthorityChecker.check(user, router.allow, req, res, r);
                 } catch (err) {
                     return App.authFailHandler(req, res, r, user);
+                }
+                if (flag === -1) {
+                    //use custom fail handler
+                    //interrupt
+                    return;
                 }
             }
 
