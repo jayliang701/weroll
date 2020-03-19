@@ -2,12 +2,17 @@
  * Created by Jay on 2015/9/16.
  */
 
-var Redis = require("../model/Redis");
-var Utils = require("./Utils");
-var SMSUtil = require("./SMSUtil");
+const Redis = require("../model/Redis");
+const Model = require("../model/Model");
+const Utils = require("./Utils");
+const SMSUtil = require("./SMSUtil");
 
 /*
  setting: {
+     storage: {
+         "type": "redis"  //or mongodb, default is redis
+         ...   //other config
+     },
      prefix:"check_code_",
      len:6,
      expire:5 * 60,
@@ -15,15 +20,127 @@ var SMSUtil = require("./SMSUtil");
      simulate:true
  }
  */
-function ValidationCode(setting) {
 
-    var REDIS_KEY = "validation_code_";
-    var DEFAULT_CODE_LEN = 6;
-    var DEFAULT_PATTERN = [ [ 48, 57 ] ];   //0-9
-    var DEFAULT_EXPIRE = 15 * 60;     //15 min
-    var config = ValidationCode.config || {};
-    var DEBUG = global.VARS.debug;
-    var SIMULATION = false;
+class MongoDBAgent {
+    
+    MongoDBAgent() {
+        this.table = undefined
+        this.DB = undefined
+    }
+
+    async init(option, callBack) {
+        option = option || {};
+
+        this.table = option.table || "checkcode";
+        this.DB = option.db ? Model.getDBByName(option.db) : Model.DB;
+        //build indexes
+        try {
+            this.DB.cr
+            let result;
+            try {
+                result = await this.DB.getIndexes(this.table);
+            } catch (err) {
+                if (err.name === "MongoError" && err.code === 26) {
+                    //no such table, need to create
+                    console.warn("no such table, need to create");
+                } else {
+                    throw err;
+                }
+            }
+            if (!result || !result["code_1"]) this.DB.ensureIndex(this.table, "code");
+            if (!result || !result["expireAt_1"]) this.DB.ensureIndex(this.table, "expireAt", { expireAfterSeconds:0 });
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+    }
+    async del(key, callBack) {
+        try {
+            await this.DB.remove(this.table, { _id: key });
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+        if (callBack) return callBack();
+    }
+    async get(key, callBack) {
+        let doc;
+        try {
+            doc = await this.DB.findOne(this.table, { _id: key });
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+        if (callBack) return callBack(null, doc.code);
+        return doc.code;
+    }
+    async set(key, code, expireTime, callBack) {
+        // expireTime --> seconds
+        try {
+            let date = new Date();
+            date.setTime(Date.now() + expireTime * 1000);
+
+            await this.DB.update(this.table, { _id: key }, { _id: key, code, expireAt: date }, { upsert:true });
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+        if (callBack) return callBack();
+    }
+}
+class RedisAgent {
+    
+    RedisAgent() {
+        this.REDIS_KEY = undefined
+    }
+
+    async init(option, callBack) {
+        option = option || {};
+
+        this.REDIS_KEY = option.prefix || "validation_code_";
+
+        if (callBack) return callBack();
+    }
+    async del(key, callBack) {
+        try {
+            await Redis.del(this.REDIS_KEY + key);
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+        if (callBack) return callBack();
+    }
+    async get(key, callBack) {
+        let code;
+        try {
+            code = await Redis.get(this.REDIS_KEY + key);
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+        if (callBack) return callBack(null, code);
+        return code;
+    }
+    async set(key, code, expireTime, callBack) {
+        // expireTime --> seconds
+        try {
+            await Redis.set(this.REDIS_KEY + key, code, expireTime);
+        } catch (err) {
+            if (callBack) return callBack(err);
+            throw err;
+        }
+        if (callBack) return callBack();
+    }
+}
+
+function ValidationCode(setting) {
+    
+    let DEFAULT_CODE_LEN = 6;
+    let DEFAULT_PATTERN = [ [ 48, 57 ] ];   //0-9
+    let DEFAULT_EXPIRE = 15 * 60;     //15 min
+    let config = ValidationCode.config || {};
+    let DEBUG = global.VARS.debug;
+    let SIMULATION = false;
 
     config = setting || config;
     DEFAULT_CODE_LEN = config.len || DEFAULT_CODE_LEN;
@@ -36,33 +153,40 @@ function ValidationCode(setting) {
     DEFAULT_EXPIRE = config.expire || DEFAULT_EXPIRE;
     SIMULATION = config.hasOwnProperty("simulate") ? config.simulate : SIMULATION;
     DEBUG = config.hasOwnProperty("debug") ? config.debug : DEBUG;
-    REDIS_KEY = config.prefix || REDIS_KEY;
+    
+    let agent;
+    if (config.storage && config.storage.type === "mongodb") {
+        agent = new MongoDBAgent();
+    } else {
+        agent = new RedisAgent();
+    }
+
+    agent.init({
+        ...config.storage,
+    }, (err) => {
+        if (err) console.error("ValidationCode init failed. ", err.messge);
+    });
+
 
     this.remove = function(key, callBack) {
-        return new Promise(function(resolve, reject) {
-            Redis.del(REDIS_KEY + key, function(redisErr) {
-                redisErr && console.error("remove validation code error: ", redisErr);
-                if (callBack) return callBack(redisErr);
-                redisErr ? reject(redisErr) : resolve();
-            });
-        });
+        return agent.del(key, callBack);
     }
 
     this.use = function(key, code, callBack) {
-        var ins = this;
+        let ins = this;
         return new Promise(function(resolve, reject) {
             if (!code || code == "") {
                 if (callBack) return callBack(null, false);
                 return resolve(false);
             }
 
-            Redis.get(REDIS_KEY + key, function(redisErr, redisRes) {
-                if (redisErr) {
-                    if (callBack) return callBack(redisErr);
-                    return reject(redisErr);
+            agent.get(key, function(err, savedCode) {
+                if (err) {
+                    if (callBack) return callBack(err);
+                    return reject(err);
                 }
 
-                if (redisRes && redisRes == code) {
+                if (savedCode && savedCode == code) {
                     ins.remove(key);
                     if (callBack) return callBack(null, true);
                     return resolve(true);
@@ -81,13 +205,13 @@ function ValidationCode(setting) {
 
     this.check = function(key, code, callBack) {
         return new Promise(function(resolve, reject) {
-            Redis.get(REDIS_KEY + key, function(redisErr, redisRes) {
-                if (redisErr) {
-                    if (callBack) return callBack(redisErr);
+            agent.get(key, function(err, savedCode) {
+                if (err) {
+                    if (callBack) return callBack(err);
                     return reject(redisErr);
                 }
 
-                if (redisRes && redisRes == code) {
+                if (savedCode && savedCode == code) {
                     if (callBack) return callBack(null, true);
                     return resolve(true);
                 }
@@ -107,24 +231,25 @@ function ValidationCode(setting) {
         callBack = typeof arguments[1] == "function" ? arguments[1] : arguments[2];
         if (typeof callBack != "function") callBack = null;
 
-        var code = option.code || generateCode(parseInt(option.len || DEFAULT_CODE_LEN), option.pattern);
+        let code = option.code || generateCode(parseInt(option.len || DEFAULT_CODE_LEN), option.pattern);
 
         return new Promise(function (resolve, reject) {
-            Redis.set(REDIS_KEY + key, code, option.expire || DEFAULT_EXPIRE, function (redisErr) {
-                if (redisErr) {
-                    if (callBack) return callBack(null, redisErr);
-                    return reject(redisErr);
+            agent.set(key, code, option.expire || DEFAULT_EXPIRE, function (err) {
+                if (err) {
+                    if (callBack) return callBack(err);
+                    reject(err);
+                    return;
                 }
                 DEBUG && console.log("generate validation code --> " + key + " >>> " + code);
                 if (callBack) return callBack(null, code);
-                return resolve(code);
+                resolve(code);
             });
 
         });
     }
 
     function generateCode(len, pattern) {
-        var parts = DEFAULT_PATTERN;
+        let parts = DEFAULT_PATTERN;
         if (pattern) {
             parts.length = 0;
             pattern.forEach(function(p) {
@@ -133,12 +258,12 @@ function ValidationCode(setting) {
 
         }
 
-        var pwd = "";
-        for (var i = 0; i < len; i++)
+        let pwd = "";
+        for (let i = 0; i < len; i++)
         {
-            var part = parts[Math.floor(Math.random() * parts.length)];
-            var code = part[0] + Math.floor(Math.random() * (part[1] - part[0]));
-            var c = String.fromCharCode(code);
+            let part = parts[Math.floor(Math.random() * parts.length)];
+            let code = part[0] + Math.floor(Math.random() * (part[1] - part[0]));
+            let c = String.fromCharCode(code);
             pwd += c;
         }
         return pwd;

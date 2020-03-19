@@ -2,11 +2,11 @@
  * Created by Jay on 6/6/15.
  */
 
-var TemplateLib = require("./TemplateLib.js");
-var Utils = require("./Utils.js");
-var Redis = require("../model/Redis.js");
-var CODES = require("../ErrorCodes");
-var Request = require("min-request");
+const TemplateLib = require("./TemplateLib.js");
+const Utils = require("./Utils.js");
+const Redis = require("../model/Redis.js");
+const CODES = require("../ErrorCodes");
+const Request = require("min-request");
 
 var proxy;
 var config;
@@ -105,6 +105,11 @@ function checkIsAllowToSend(phone, option, callBack) {
     option = option || {};
 
     return new Promise(function(resolve, reject) {
+
+        if (config.hasOwnProperty("check") && config.check === false) {
+            return resolve(null);
+        }
+
         var key = PREFIX + phone;
         if (option.__sendType) key += "_" + option.__sendType;
         Redis.get(key, function(err, redisRes) {
