@@ -34,10 +34,18 @@ Session.prototype.init = function (params) {
         this.payloadWorker = params.payloadWorker;
     }
     if (!this.payloadWorker) {
-        if (this.config.storage === "mongodb") {
-            this.payloadWorker = new MongoSessionPayload();
+        let use = "redis", args = {};
+        if (typeof this.config.storage === "string") {
+            use = this.config.storage === "mongodb" ? "mongodb" : "redis";
         } else {
-            this.payloadWorker = new RedisSessionPayload();
+            use = this.config.storage.use === "mongodb" ? "mongodb" : "redis";
+            args = { ...this.config.storage };
+        }
+        delete args["use"];
+        if (use === "mongodb") {
+            this.payloadWorker = new MongoSessionPayload(args);
+        } else {
+            this.payloadWorker = new RedisSessionPayload(args);
         }
     }
     this.payloadWorker.session = this;

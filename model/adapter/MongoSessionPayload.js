@@ -7,11 +7,16 @@ const Schema = DAOFactory.Schema;
 const TABLE = "session";
 
 class NativeAgent {
+
+    constructor(option) {
+        this.tableName = option.table;
+    }
+
     buildIndexes() {
-        Model.DB.getIndexes(TABLE, (err, result) => {
+        Model.DB.getIndexes(this.tableName, (err, result) => {
             if (err) return console.error(err);
-            if (!result || !result["userid_1"]) Model.DB.ensureIndex(TABLE, "userid");
-            if (!result || !result["_expireAt_1"]) Model.DB.ensureIndex(TABLE, "_expireAt", { expireAfterSeconds:0 });
+            if (!result || !result["userid_1"]) Model.DB.ensureIndex(this.tableName, "userid");
+            if (!result || !result["_expireAt_1"]) Model.DB.ensureIndex(this.tableName, "_expireAt", { expireAfterSeconds:0 });
             
         });
     }
@@ -19,17 +24,17 @@ class NativeAgent {
     savePayload (key, payload, expireTime) {
         let date = new Date();
         date.setTime(Date.now() + expireTime * 1000);
-        return Model.DB.update(TABLE, { _id:key }, { _id:key, ...payload, _expireAt: date }, { upsert: true });
+        return Model.DB.update(this.tableName, { _id:key }, { _id:key, ...payload, _expireAt: date }, { upsert: true });
     }
     
     readPayload (key) {
-        return Model.DB.findOne(TABLE, { _id: key }).then((payload) => {
+        return Model.DB.findOne(this.tableName, { _id: key }).then((payload) => {
             return Promise.resolve(payload);
         });
     }
     
     removePayload (key) {
-        return Model.DB.remove(TABLE, { _id: key }).then(() => {
+        return Model.DB.remove(this.tableName, { _id: key }).then(() => {
             return Promise.resolve();
         });
     }
@@ -39,7 +44,7 @@ class NativeAgent {
             if (this.session.config.onePointEnter) {
                 return reject([this.session.formatKey(userid)]);
             }
-            Model.DB.find(TABLE, { userid }, { _id:1 }, (err, docs) => {
+            Model.DB.find(this.tableName, { userid }, { _id:1 }, (err, docs) => {
                 if (err) return reject(err);
                 resolve(docs.map(doc => doc._id));
             });
@@ -49,7 +54,7 @@ class NativeAgent {
     refreshPayloadExpireTime (key, expireTime) {
         let date = new Date();
         date.setTime(Date.now() + expireTime * 1000);
-        return Model.DB.update(TABLE, { _id: key }, { _expireAt: date }).then(() => {
+        return Model.DB.update(this.tableName, { _id: key }, { _expireAt: date }).then(() => {
             return Promise.resolve();
         });
     }
@@ -57,16 +62,17 @@ class NativeAgent {
 
 class MongooseAgent {
 
-    constructor() {
+    constructor(option) {
+        this.tableName = option.table;
         const schema = new Schema({
             _id: String,
             _expireAt: Date,
             userid: String
-        }, { collection:TABLE, strict: false, versionKey:false });
+        }, { collection: this.tableName, strict: false, versionKey:false });
         schema.index({ userid:1 });
         schema.index({ _expireAt:1 }, { expireAfterSeconds:0 });
 
-        this.table = DAOFactory.getInstance().model(TABLE, schema);
+        this.table = DAOFactory.getInstance().model(this.tableName, schema);
     }
 
     buildIndexes() {
@@ -122,10 +128,14 @@ class MongoSessionPayload extends SessionPayload {
     constructor(option) {
         super();
 
+        option = option || {};
+
+        let table = option.table || TABLE;
+
         if (DAOFactory.getInstance()) {
-            this.agent = new MongooseAgent();
+            this.agent = new MongooseAgent({ table });
         } else {
-            this.agent = new NativeAgent();
+            this.agent = new NativeAgent({ table });
         }
 
 
@@ -135,6 +145,7 @@ class MongoSessionPayload extends SessionPayload {
         } else {
             this.buildIndexes();
         }
+        console.log(option);
     }
 
     buildIndexes() {
