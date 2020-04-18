@@ -13,6 +13,11 @@ function Session() {
 
 Session.prototype.init = function (params) {
     this.config = params || {};
+    if (isEmpty(this.config))
+    {
+        return;
+    }
+
     this.config.prefix = this.config.prefix || "";
     let ins = this;
     if (this.config.onePointEnter) {
