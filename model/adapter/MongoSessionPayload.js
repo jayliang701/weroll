@@ -41,8 +41,8 @@ class NativeAgent {
     
     findAllPayloadKeys (userid) {
         return new Promise((resolve, reject) => {
-            if (this.session.config.onePointEnter) {
-                return reject([this.session.formatKey(userid)]);
+            if (this.parent.session.config.onePointEnter) {
+                return reject([this.parent.session.formatKey(userid)]);
             }
             Model.DB.find(this.tableName, { userid }, { _id:1 }, (err, docs) => {
                 if (err) return reject(err);
@@ -104,8 +104,8 @@ class MongooseAgent {
     
     findAllPayloadKeys (userid) {
         return new Promise((resolve, reject) => {
-            if (this.session.config.onePointEnter) {
-                return reject([this.session.formatKey(userid)]);
+            if (this.parent.session.config.onePointEnter) {
+                return reject([this.parent.session.formatKey(userid)]);
             }
             this.table.find({ userid }, { _id:1 }, (err, docs) => {
                 if (err) return reject(err);
@@ -137,7 +137,7 @@ class MongoSessionPayload extends SessionPayload {
         } else {
             this.agent = new NativeAgent({ table });
         }
-
+        this.agent.parent = this;
 
         option = option || {};
         if (option.buildIndexes) {
@@ -145,7 +145,6 @@ class MongoSessionPayload extends SessionPayload {
         } else {
             this.buildIndexes();
         }
-        console.log(option);
     }
 
     buildIndexes() {

@@ -74,6 +74,15 @@ App.use(function(req, res, next) {
 });
 WRP.register(App, "middle");
 
+App.extractAPIParamsFromRequest = (req) => {
+    let params = req.body.data;
+    if (!params) params = {};
+    if (typeof params === "string") {
+        params = JSON.parse(params);
+    }
+    return params;
+}
+
 App.post("/api", async function (req, res) {
 
     let method = req.body.method;
@@ -90,15 +99,18 @@ App.post("/api", async function (req, res) {
         return;
     }
 
-    let params = req.body.data;
-    if (!params) params = {};
-    if (typeof params === "string") {
-        try {
-            params = JSON.parse(params);
-        } catch (err) {
-            res.sayError(CODES.REQUEST_PARAMS_INVALID, "JSON.parse(params) error ==> " + err.toString());
-            return;
+    let params;
+    try {
+        params = App.extractAPIParamsFromRequest(req);
+    } catch (err) {
+        if (err.code)
+        {
+            res.sayError(err);
+        } else 
+        {
+            res.sayError(CODES.REQUEST_PARAMS_INVALID, "parse request params fail ==> " + err.toString());
         }
+        return;
     }
 
     let auth = req.headers["authorization"] || params.auth;
