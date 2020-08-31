@@ -23,11 +23,17 @@ exports.isConnected = function() {
 }
 
 function setExpire(key, val) {
-    if (!val || val == - 1) {
-        //no expired
-    } else {
-        client.expire(exports.join(key), val);
-    }
+    return new Promise((resolve, reject) => {
+        if (!val || val == - 1) {
+            //no expired
+            resolve(); 
+        } else {
+            client.expire(exports.join(key), val, (err) => {
+                if (err) return reject(err);
+                resolve(); 
+            });
+        }
+    });
 }
 
 var EXPIRED_MAP = {};
@@ -50,7 +56,7 @@ exports.removeAllEventListener = function() {
 
 exports.setExpireTime = function(key, val) {
     if (key instanceof Array) key = key.join(SEP);
-    setExpire(key, val);
+    return setExpire(key, val);
 }
 
 exports.registerExpiredTime = function(key, expired) {
