@@ -205,12 +205,15 @@ function preprocess(req, res, next) {
 
     req.__callAPI = __callAPI.bind(req);
 
-    let identifyid = req.cookies.identifyid;
-    if (!identifyid) {
-        identifyid = Utils.md5(req.headers["user-agent"] + req._clientIP + Date.now());
-        res.cookie("identifyid", identifyid);
-    }
-    req._identifyID = identifyid;
+    if (global.VARS.enableIdentifyID) {
+        let identifyid = req.cookies.identifyid;
+        if (!identifyid) {
+            identifyid = Utils.md5(req.headers["user-agent"] + req._clientIP + Date.now());
+            res.cookie("identifyid", identifyid);
+        }
+        req._identifyID = identifyid;
+    }                                
+
 
     res.exec = exec.bind(res);
     res.sayError = sayError.bind(res);
