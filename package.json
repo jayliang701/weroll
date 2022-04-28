@@ -24,7 +24,7 @@
     "url": "https://github.com/jayliang701/weroll/issues"
   },
   "dependencies": {
-    "async": "<=2.2.0",
+    "async": "<=2.7.0",
     "body-parser": "^1.15.2",
     "bufferhelper": "^0.2.1",
     "console-stamp": "^0.2.5",
