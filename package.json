@@ -35,7 +35,7 @@
     "express": "^4.14.0",
     "formidable": "^1.0.17",
     "iconv-lite": "^0.4.15",
-    "jsonwebtoken": "^8.3.0",
+    "jsonwebtoken": "^9.0.0",
     "lodash": "^4.17.5",
     "memory-cache": "^0.1.6",
     "method-override": "^2.3.7",
